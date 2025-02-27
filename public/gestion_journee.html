@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang ="fr"> 
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="style_chrono.css">
+</head>
+<body>
+    <div class="admin-container">
+        <h1> Ajouter une course </h1>
+        <form id="ajout-course-form" action="/ajoutCourse" method="POST"> 
+            <label for="nom_course"> Nom de la course: </label>
+            <input type="text" id="nom_course" name="nomCourse" required>
+
+            <label for="date_course"> Date de la course: </label>
+            <input type="date" id="date_course" name="dateCourse" required>
+
+            <label for="depart_course"> Depart de la course: </label>
+            <input type="text" id="depart_course" name="departCourse" required>
+            
+            <label for="arrive_course"> Arrive de la course: </label>
+            <input type="text" id="arrive_course" name="arriveCourse" required>
+
+            <button type="submit"> Ajouter </button>
+        </form>
+    </div>
+   
+</body>
+</html>

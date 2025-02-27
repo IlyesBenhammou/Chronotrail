@@ -1,0 +1,53 @@
+body {
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: #ecf0f1;
+}
+
+.container {
+    background: rgba(44, 62, 80, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    text-align: center;
+    width: 300px;
+}
+
+.title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #ecf0f1;
+}
+
+.timer {
+    font-size: 48px;
+    margin: 20px 0;
+    color: #ecf0f1;
+}
+
+.btn {
+    background: #3498db;
+    border: none;
+    border-radius: 30px; /* Bouton arrondi */
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 15px 30px; /* Augmenter la taille du bouton */
+    text-transform: uppercase;
+    transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Ajout d'une ombre */
+}
+
+.btn:hover {
+    background: #2980b9;
+    transform: scale(1.05); /* Légère augmentation de taille au survol */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Augmenter l'ombre au survol */
+}
+
+
