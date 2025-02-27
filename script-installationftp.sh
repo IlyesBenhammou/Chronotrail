@@ -15,3 +15,14 @@ apt update -y
 # Installer Pure-FTPd
 echo "Installation de Pure-FTPd..."
 apt install -y pure-ftpd
+
+# Créer un utilisateur système pour le FTP
+FTP_USER="ftpuser"
+FTP_PASSWORD="ftppassword"
+FTP_HOME="/home/$FTP_USER"
+
+# Créer l'utilisateur et son répertoire personnel
+echo "Création de l'utilisateur FTP..."
+useradd -m -d "$FTP_HOME" -s /usr/sbin/nologin "$FTP_USER"
+echo -e "$FTP_PASSWORD\n$FTP_PASSWORD" | passwd "$FTP_USER"
+
