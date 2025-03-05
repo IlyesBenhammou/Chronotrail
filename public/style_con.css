@@ -82,7 +82,32 @@ h1 {
     color: white; /* Change l'icône au focus */
 }
 
-.btn {
+.forgot-password {
+    display: flex;
+    width: 100%;
+    justify-content: center; /* Centrer le lien */
+    margin-top: 16px; /* Espacement supérieur */
+}
+
+.forgot-password-link {
+    color: #9b4de8; /* Couleur violette pour le lien */
+    font-weight: bold;
+    text-decoration: none; /* Supprimer le souligné par défaut */
+    font-size: 14px; /* Taille de la police ajustée */
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.forgot-password-link:hover {
+    color: #8a3dde; /* Couleur plus foncée au survol */
+    transform: scale(1.05); /* Légèrement agrandi au survol */
+}
+
+.forgot-password-link:active {
+    color: #6f2ac4; /* Couleur encore plus foncée lors du clic */
+}
+
+
+.login-button {
     padding: 12px 24px;
     border-radius: 50px;
     border: none;
@@ -96,12 +121,12 @@ h1 {
     width: 100%; /* Assure que le bouton occupe toute la largeur */
 }
 
-.btn:hover {
+.login-button:hover {
     background-color: #8a3dde; /* Couleur plus foncée au survol */
     transform: scale(1.05); /* Légèrement agrandi au survol */
 }
 
-.btn:active {
+.login-button:active {
     background-color: #6f2ac4; /* Couleur encore plus foncée au clic */
 }
 
@@ -111,5 +136,3 @@ h1 {
     color: #9b4de8;
     text-align: center;
 }
-
-

@@ -3,16 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style_con.css">
     <title>Connexion</title>
 </head>
 <body>
-    <h1>Connexion</h1>
-    <form action="/login" method="POST">
-        <label for="username">Identifiant :</label>
-        <input type="text" id="username" name="username" required><br><br>
-        <label for="password">Mot de passe :</label>
-        <input type="password" id="password" name="password" required><br><br>
-        <button type="submit">Se connecter</button>
+    <form class ="container" action="/login" method="POST">
+        <h1>Connexion</h1>
+        <section class="input-box">
+            <input type="text" id="username" name="username" placeholder="Identifiant" required>
+            <i class="bx bxs-lock-user"> </i>
+        </section>
+        <section class="input-box" >
+            <input type="password" id="password" name="password" placeholder="Mot de passe" required>
+            <i class="bx bxs-lock-user"> </i>
+        </section>
+
+        <section class="forgot-password">
+            <a class="forgot-password-link" href="mdp_oublie.html"> mot de passe oublié ?
+            </a>
+        </section>
+        
+
+        <button class="login-button" type="submit">Se connecter</button>
     </form>
 </body>
 </html>
