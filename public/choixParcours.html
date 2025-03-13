@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choisir un parcours</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7fc;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            font-size: 32px;
+            color: #4c4c4c;
+            margin-bottom: 20px;
+        }
+        .parcours-container {
+            display: flex;
+            flex-direction: column;
+            width: 80%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
+        .parcours-box {
+            background-color: #fff;
+            padding: 20px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .parcours-box h3 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .parcours-box p {
+            margin: 5px 0;
+        }
+        .parcours-box button {
+            background-color: #9b4de8;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .parcours-box button:hover {
+            background-color: #8a3dde;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Choisir un parcours</h1>
+
+<div id="parcours-container" class="parcours-container"></div>
+
+<script>
+    // Appel à l'API pour récupérer les parcours
+    fetch('/get-trails')
+        .then(response => response.json())
+        .then(parcours => {
+            const container = document.getElementById('parcours-container');
+            parcours.forEach(p => {
+                const parcoursDiv = document.createElement('div');
+                parcoursDiv.classList.add('parcours-box');
+                
+                parcoursDiv.innerHTML = `
+                    <h3>${p.nom}</h3>
+                    <p><strong>Date :</strong> ${p.date}</p>
+                    <p><strong>Départ :</strong> ${p.depart}</p>
+                    <p><strong>Arrivée :</strong> ${p.arrive}</p>
+                    <button onclick="selectParcours(${p.id})">Choisir ce parcours</button>
+                `;
+                container.appendChild(parcoursDiv);
+            });
+        })
+        .catch(err => {
+            console.error('Erreur de récupération des parcours:', err);
+        });
+
+    // Fonction pour choisir un parcours
+    function selectParcours(id) {
+        console.log('Parcours choisi avec ID:', id);
+        // Vous pouvez rediriger ou afficher des informations supplémentaires ici
+    }
+</script>
+
+</body>
+</html>

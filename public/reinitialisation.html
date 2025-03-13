@@ -105,8 +105,11 @@
         <h1>Réinitialisez votre mot de passe</h1>
         
         <!-- Formulaire pour entrer le nouveau mot de passe -->
-        <form id="resetPasswordForm">
-            <input type="hidden" id="email" name="email" value="{{email}}" required>
+        <form id="resetPasswordForm" action="/reset-password-submit" method="POST">
+             <!-- Champs cachés pour transmettre les informations du token et email -->
+              <input type="hidden" id="token" name="token" value="">
+              <input type="hidden" id="email" name="email" value="">
+
             <section class="input-box">
                 <input type="text" id="username" name="username" placeholder="Identifiant" required>
             </section>
@@ -124,35 +127,35 @@
     </div>
 
     <script>
-        // Gestion de la soumission du formulaire
-        document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Empêche la soumission normale du formulaire
+    document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Empêche le rechargement de la page
 
-            var email = document.getElementById('email').value; // Récupère l'email caché
-            var newPassword = document.getElementById('newPassword').value; // Nouveau mot de passe
-            var confirmPassword = document.getElementById('confirmPassword').value; // Confirmation du mot de passe
+    var username = document.getElementById('username').value; // Identifiant
+    var newPassword = document.getElementById('newPassword').value; // Nouveau mot de passe
+    var confirmPassword = document.getElementById('confirmPassword').value; // Confirmation
 
-            if (newPassword !== confirmPassword) {
-                document.getElementById('responseMessage').innerHTML = "<p>Les mots de passe ne correspondent pas.</p>";
-                return;
-            }
+    window.onload = function() {
+    // Récupère les paramètres de l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const email = urlParams.get('email');
 
-            var formData = new FormData();
-            formData.append('email', email);
-            formData.append('newPassword', newPassword);
+    // Remplit les champs cachés avec les valeurs du token et de l'email
+    if (token && email) {
+        document.getElementById('token').value = token;
+        document.getElementById('email').value = email;
+    } else {
+        // Gérer le cas où le token ou l'email est manquant
+        document.getElementById('responseMessage').innerText = "Lien invalide ou expiré.";
+    }
+};
 
-            fetch('/reset-password-submit', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('responseMessage').innerHTML = `<p>${data}</p>`;
-            })
-            .catch(error => {
-                document.getElementById('responseMessage').innerHTML = "<p>Erreur lors de la réinitialisation. Veuillez réessayer.</p>";
-            });
-        });
-    </script>
+
+    if (newPassword !== confirmPassword) {
+        document.getElementById('responseMessage').innerHTML = "<p>Les mots de passe ne correspondent pas.</p>";
+        return;
+    }
+});
+ </script>
 </body>
 </html>

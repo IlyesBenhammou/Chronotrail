@@ -1,24 +1,4 @@
-<!DOCTYPE html>
-<html lang ="fr"> 
-<head>
-    <meta charset="UTF-8">
-    <title>Carte du Trail</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-    <style>
-        #map { height: 500px; }
-    </style>
-</head>
-<body>
-    <h1 class="title"> detail course </h1>
-    <div id="chronometre" class="timer">0:00:00
-    <button onclick="demarrerChrono()" class="btn">Démarrer</button>
-    <script src="chrono.js"> </script>
-    <div id="map"></div>
-<script>
-    // Initialiser la carte
+// Initialiser la carte
     var map = L.map('map').setView([48.4049, 2.7016], 13); // Coordonnées de départ (Forêt de Fontainebleau)
 
     // Ajouter un fond de carte
@@ -68,7 +48,4 @@
         .catch(error => {
             console.error("Erreur lors du chargement des données :", error);
         });
-    </script>
-    
-</body>
-</html>
+

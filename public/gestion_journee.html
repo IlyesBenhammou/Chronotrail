@@ -2,7 +2,15 @@
 <html lang ="fr"> 
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="style_chrono.css">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte du Trail</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <link rel="stylesheet" type="text/css" href="styleCourse.css">
 </head>
 <body>
     <div class="admin-container">
@@ -23,6 +31,119 @@
             <button type="submit"> Ajouter </button>
         </form>
     </div>
+
+    <div id="map"></div>
+
+    <div class="action-buttons">
+        <button id="saveButton">Sauvegarder le parcours</button>
+        <button onclick="window.location.href='choixParcours.html'">Accéder à tout les parcours </button>
+    </div>
+
+
+    <script>
+        var map = L.map('map').setView([48.4049, 2.7016], 13); // Coordonnées de départ (Forêt de Fontainebleau)
+        
+        // Ajouter un fond de carte
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Initialiser les outils de dessin
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        
+        var drawControl = new L.Control.Draw({
+            edit: { featureGroup: drawnItems },
+            draw: {
+                marker: true,  // Permet d'ajouter des points
+                polyline: true,  // Permet de relier les points
+                polygon: false,  // Désactive l'ajout de polygones
+                rectangle: false,
+                circle: false
+            }
+        });
+        map.addControl(drawControl);
+        
+        // Gérer l'ajout de points et de lignes
+        map.on('draw:created', function (e) {
+            var layer = e.layer;
+            drawnItems.addLayer(layer);
+        
+            if (layer instanceof L.Marker) {
+                alert('Point ajouté à la carte !');
+            }
+        
+            if (layer instanceof L.Polyline) {
+                alert('Ligne ajoutée, les points sont reliés !');
+            }
+        });
+        
+        // Fonction pour envoyer les points et les lignes tracées au serveur
+        document.getElementById('saveButton').addEventListener('click', function() {
+            var geoJson = drawnItems.toGeoJSON(); // Récupère les éléments dessinés sous format GeoJSON
+        
+            // Inverser les coordonnées [longitude, latitude] → [latitude, longitude] si elles sont valides
+            var coordinates = geoJson.features.map(feature => {
+                if (feature.geometry && (feature.geometry.type === 'Point' || feature.geometry.type === 'LineString')) {
+                    return feature.geometry.coordinates.map(coord => {
+                        // Vérifier que la coordonnée est un tableau de 2 éléments numériques
+                        if (Array.isArray(coord) && coord.length === 2 &&
+                            !isNaN(coord[0]) && !isNaN(coord[1]) &&
+                            coord[0] !== null && coord[1] !== null) {
+                            // Vérifier si les coordonnées sont déjà dans l'ordre [latitude, longitude]
+                            if (coord[0] > -90 && coord[0] < 90 && coord[1] > -180 && coord[1] < 180) {
+                                // Inverser les coordonnées [latitude, longitude] en [longitude, latitude]
+                                return [coord[1], coord[0]];  // [longitude, latitude]
+                            } else {
+                                console.warn('Coordonnée invalide (hors des limites):', coord);
+                                return null;
+                            }
+                        } else {
+                            console.warn('Coordonnée invalide (doit être un tableau de 2 éléments numériques) :', coord);
+                            return null;
+                        }
+                    }).filter(coord => coord !== null);  // Filtrer les coordonnées invalides
+                }
+                return []; // Cas où ce n'est ni un point ni une ligne
+            }).flat(); // Aplatir le tableau si nécessaire
+        
+            // Vérification de l'array final avant envoi
+            console.log("Coordonnées envoyées au serveur :", coordinates);
+
+            // Récupérer la valeur du champ 'Nom de la course' (input)
+    var nomParcours = document.getElementById('nom_course').value;
+    // Vérifier si un nom a bien été saisi
+    
+    if (!nomParcours) {
+    alert('Veuillez entrer un nom pour le parcours');
+    return;
+}
+        
+            // Envoi des données vers le backend (route POST /save-trail)
+            fetch('/save-trail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: nomParcours  ,  // Nom du parcours à définir (exemple: Forêt de Fontainebleau)
+                    coordinates: coordinates
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);  // Afficher un message de succès
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement du parcours');
+            });
+        });
+        </script>
+        
+
    
 </body>
 </html>
