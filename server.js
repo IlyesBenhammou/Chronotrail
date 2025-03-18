@@ -74,84 +74,112 @@ app.get('/demarrer-chrono', (req, res) => {
     res.json({ hDebut: hDebut.getTime() });
 });
 
-// API pour ajouter une course dans la base de données
-app.post('/ajoutCourse', async (req, res) => {
-    const { nomCourse, dateCourse, departCourse, arriveCourse } = req.body;
 
+
+
+// Route unifiée pour sauvegarder une course complète avec toutes les informations
+app.post('/save-course', async (req, res) => {
+    // Récupération de toutes les données possibles
+    const { 
+        nom,           // Nom de la course
+        date,          // Date de la course
+        depart,        // Point de départ
+        arrive,        // Point d'arrivée
+        coordinates    // Coordonnées du parcours
+    } = req.body;
+    
     try {
-        const result = await pool.query(
-            'INSERT INTO infojourne (nom, date, depart, arrive) VALUES ($1, $2, $3, $4) RETURNING *',
-            [nomCourse, dateCourse, departCourse, arriveCourse]
-        );
-        console.log("Insertion réussie :", result.rows[0]);
-        res.status(201).json({ message: "Course ajoutée avec succès", course: result.rows[0] });
+        // Validation des données essentielles
+        if (!nom) {
+            return res.status(400).json({ error: 'Le nom de la course est obligatoire' });
+        }
+        
+        // Validation des coordonnées si elles sont fournies
+        let jsonCoordinates = null;
+        if (coordinates) {
+            if (!Array.isArray(coordinates)) {
+                return res.status(400).json({ 
+                    error: 'Les coordonnées doivent être un tableau de points' 
+                });
+            }
+            
+            // Vérifier que chaque élément est une paire [longitude, latitude]
+            const validCoordinates = coordinates.every(coord => 
+                Array.isArray(coord) && coord.length === 2 &&
+                typeof coord[1] === 'number' && typeof coord[0] === 'number'
+            );
+            
+            if (!validCoordinates) {
+                return res.status(400).json({ 
+                    error: 'Chaque coordonnée doit être une paire [longitude, latitude] valide.' 
+                });
+            }
+            
+            // Convertir les coordonnées en format JSONB
+            jsonCoordinates = JSON.stringify(coordinates);
+        }
+        
+        // Requête SQL pour insérer toutes les données
+        const query = `
+            INSERT INTO courses (nom, date, depart, arrive, coordinates) 
+            VALUES ($1, $2, $3, $4, $5::jsonb) 
+            RETURNING *
+        `;
+        
+        const values = [nom, date, depart, arrive, jsonCoordinates];
+        const result = await pool.query(query, values);
+        
+        console.log("Course sauvegardée avec succès:", result.rows[0]);
+        res.status(201).json({ 
+            message: "Course sauvegardée avec succès", 
+            course: result.rows[0] 
+        });
     } catch (err) {
-        console.error('Erreur lors de l\'insertion des données', err);
-        res.status(500).json({ error: "Erreur serveur" });
+        console.error('Erreur lors de la sauvegarde de la course:', err);
+        res.status(500).json({ 
+            error: "Erreur serveur lors de la sauvegarde", 
+            details: err.message 
+        });
     }
 });
 
-
-// Route POST pour sauvegarder un parcours
-app.post('/save-trail', async (req, res) => {
-    const { name, coordinates } = req.body;
-
-    try {
-        // Vérification des données reçues
-        if (!name || !Array.isArray(coordinates)) {
-            return res.status(400).json({ error: 'Nom et coordonnées sont requis' });
-        }
-
-        // Vérifier que chaque élément est une paire [longitude, latitude]
-        const validCoordinates = coordinates.every(coord => 
-            Array.isArray(coord) && coord.length === 2 && 
-            typeof coord[0] === 'number' && typeof coord[1] === 'number'
-        );
-
-        if (!validCoordinates) {
-            return res.status(400).json({ error: 'Chaque coordonnée doit être une paire [longitude, latitude] valide.' });
-        }
-
-        // Convertir les coordonnées en format JSONB
-        const jsonCoordinates = JSON.stringify(coordinates);
-
-        // Requête pour insérer les données dans la table
-        const query = 'INSERT INTO parcours (name, coordinates) VALUES ($1, $2::jsonb) RETURNING *';
-        const values = [name, jsonCoordinates];
-
-        const { rows } = await pool.query(query, values);
-
-        // Réponse de succès
-        res.json({ message: 'Parcours enregistré avec succès', trail: rows[0] });
-    } catch (err) {
-        console.error('Erreur lors de l\'enregistrement du parcours :', err);
-        res.status(500).json({ error: 'Erreur lors de l\'enregistrement du parcours' });
-    }
-});
-
-
-
-// Route pour récupérer les parcours depuis la base de données
-app.get('/get-trail/:id', async (req, res) => {
+// Route pour récupérer une course par son ID
+app.get('/course/:id', async (req, res) => {
     const { id } = req.params;
-
+    
     try {
-        // Utilisation de l'id dynamique pour la requête
-        const query = 'SELECT * FROM parcours WHERE id = $1';
+        const query = 'SELECT * FROM courses WHERE id = $1';
         const result = await pool.query(query, [id]);
-
+        
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Parcours non trouvé' });
+            return res.status(404).json({ message: 'Course non trouvée' });
         }
-
-        const trail = result.rows[0];
-        res.json(trail);  // Renvoie directement l'objet JavaScript
+        
+        res.json(result.rows[0]);
     } catch (err) {
-        console.error("Erreur lors de la récupération du parcours:", err);  // Afficher l'erreur plus précisément
-        res.status(500).json({ error: 'Erreur lors de la récupération du parcours', details: err.message });
+        console.error("Erreur lors de la récupération de la course:", err);
+        res.status(500).json({ 
+            error: 'Erreur lors de la récupération de la course', 
+            details: err.message 
+        });
     }
 });
 
+// Route pour récupérer toutes les courses
+app.get('/courses', async (req, res) => {
+    try {
+        const query = 'SELECT * FROM courses ORDER BY date DESC';
+        const result = await pool.query(query);
+        
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Erreur lors de la récupération des courses:", err);
+        res.status(500).json({ 
+            error: 'Erreur lors de la récupération des courses', 
+            details: err.message 
+        });
+    }
+});
 
 
 
@@ -226,3 +254,5 @@ app.post('/reset-password-submit', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Serveur en ligne : http://localhost:${PORT}`);
 });
+
+

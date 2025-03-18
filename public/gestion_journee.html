@@ -1,8 +1,6 @@
 <!DOCTYPE html>
-<html lang ="fr"> 
+<html lang="fr"> 
 <head>
-    <meta charset="UTF-8">
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carte du Trail</title>
@@ -14,31 +12,28 @@
 </head>
 <body>
     <div class="admin-container">
-        <h1> Ajouter une course </h1>
-        <form id="ajout-course-form" action="/ajoutCourse" method="POST"> 
-            <label for="nom_course"> Nom de la course: </label>
+        <h1>Ajouter une course</h1>
+        <form id="ajout-course-form"> 
+            <label for="nom_course">Nom de la course:</label>
             <input type="text" id="nom_course" name="nomCourse" required>
 
-            <label for="date_course"> Date de la course: </label>
+            <label for="date_course">Date de la course:</label>
             <input type="date" id="date_course" name="dateCourse" required>
 
-            <label for="depart_course"> Depart de la course: </label>
+            <label for="depart_course">Départ de la course:</label>
             <input type="text" id="depart_course" name="departCourse" required>
             
-            <label for="arrive_course"> Arrive de la course: </label>
+            <label for="arrive_course">Arrivée de la course:</label>
             <input type="text" id="arrive_course" name="arriveCourse" required>
-
-            <button type="submit"> Ajouter </button>
         </form>
     </div>
 
     <div id="map"></div>
 
     <div class="action-buttons">
-        <button id="saveButton">Sauvegarder le parcours</button>
-        <button onclick="window.location.href='choixParcours.html'">Accéder à tout les parcours </button>
+        <button id="saveButton">Sauvegarder la course</button>
+        <button onclick="window.location.href='choixParcours.html'">Accéder à tous les parcours</button>
     </div>
-
 
     <script>
         var map = L.map('map').setView([48.4049, 2.7016], 13); // Coordonnées de départ (Forêt de Fontainebleau)
@@ -70,80 +65,99 @@
             drawnItems.addLayer(layer);
         
             if (layer instanceof L.Marker) {
-                alert('Point ajouté à la carte !');
+                console.log('Point ajouté à la carte !');
             }
         
             if (layer instanceof L.Polyline) {
-                alert('Ligne ajoutée, les points sont reliés !');
+                console.log('Ligne ajoutée, les points sont reliés !');
             }
         });
         
-        // Fonction pour envoyer les points et les lignes tracées au serveur
+        // Fonction pour extraire les coordonnées des éléments dessinés
+        function extractCoordinates(geoJson) {
+            let allCoordinates = [];
+            
+            geoJson.features.forEach(feature => {
+        if (feature.geometry) {
+            if (feature.geometry.type === 'Point') {
+                // Pour un point, on inverse les coordonnées (latitude, longitude)
+                allCoordinates.push([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+            } 
+            else if (feature.geometry.type === 'LineString') {
+                // Pour une ligne, on inverse chaque coordonnée (latitude, longitude)
+                feature.geometry.coordinates.forEach(coord => {
+                    allCoordinates.push([coord[1], coord[0]]);
+                });
+            }
+        }
+    });
+            
+            return allCoordinates;
+        }
+        
+        // Fonction pour envoyer la course au serveur
         document.getElementById('saveButton').addEventListener('click', function() {
-            var geoJson = drawnItems.toGeoJSON(); // Récupère les éléments dessinés sous format GeoJSON
-        
-            // Inverser les coordonnées [longitude, latitude] → [latitude, longitude] si elles sont valides
-            var coordinates = geoJson.features.map(feature => {
-                if (feature.geometry && (feature.geometry.type === 'Point' || feature.geometry.type === 'LineString')) {
-                    return feature.geometry.coordinates.map(coord => {
-                        // Vérifier que la coordonnée est un tableau de 2 éléments numériques
-                        if (Array.isArray(coord) && coord.length === 2 &&
-                            !isNaN(coord[0]) && !isNaN(coord[1]) &&
-                            coord[0] !== null && coord[1] !== null) {
-                            // Vérifier si les coordonnées sont déjà dans l'ordre [latitude, longitude]
-                            if (coord[0] > -90 && coord[0] < 90 && coord[1] > -180 && coord[1] < 180) {
-                                // Inverser les coordonnées [latitude, longitude] en [longitude, latitude]
-                                return [coord[1], coord[0]];  // [longitude, latitude]
-                            } else {
-                                console.warn('Coordonnée invalide (hors des limites):', coord);
-                                return null;
-                            }
-                        } else {
-                            console.warn('Coordonnée invalide (doit être un tableau de 2 éléments numériques) :', coord);
-                            return null;
-                        }
-                    }).filter(coord => coord !== null);  // Filtrer les coordonnées invalides
-                }
-                return []; // Cas où ce n'est ni un point ni une ligne
-            }).flat(); // Aplatir le tableau si nécessaire
-        
-            // Vérification de l'array final avant envoi
-            console.log("Coordonnées envoyées au serveur :", coordinates);
-
-            // Récupérer la valeur du champ 'Nom de la course' (input)
-    var nomParcours = document.getElementById('nom_course').value;
-    // Vérifier si un nom a bien été saisi
-    
-    if (!nomParcours) {
-    alert('Veuillez entrer un nom pour le parcours');
-    return;
-}
-        
-            // Envoi des données vers le backend (route POST /save-trail)
-            fetch('/save-trail', {
+            // Récupération des données du formulaire
+            var nom = document.getElementById('nom_course').value;
+            var date = document.getElementById('date_course').value;
+            var depart = document.getElementById('depart_course').value;
+            var arrive = document.getElementById('arrive_course').value;
+            
+            // Validation des champs requis
+            if (!nom || !date || !depart || !arrive) {
+                alert('Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+            
+            // Récupération des coordonnées tracées sur la carte
+            var geoJson = drawnItems.toGeoJSON();
+            var coordinates = extractCoordinates(geoJson);
+            
+            // Vérification des coordonnées
+            if (coordinates.length === 0) {
+                alert('Veuillez tracer un parcours sur la carte');
+                return;
+            }
+            
+            console.log("Données à envoyer:", {
+                nom: nom,
+                date: date,
+                depart: depart,
+                arrive: arrive,
+                coordinates: coordinates
+            });
+            
+            // Envoi des données vers le backend (route POST /save-course)
+            fetch('/save-course', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    name: nomParcours  ,  // Nom du parcours à définir (exemple: Forêt de Fontainebleau)
-                    coordinates: coordinates
+                    nom: nom,           // Nom de la course
+                    date: date,         // Date de la course
+                    depart: depart,     // Point de départ
+                    arrive: arrive,     // Point d'arrivée
+                    coordinates: coordinates // Coordonnées du parcours
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert(data.message);  // Afficher un message de succès
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur serveur: ' + response.status);
                 }
+                return response.json();
+            })
+            .then(data => {
+                alert('Course sauvegardée avec succès!');
+                console.log('Réponse du serveur:', data);
+                // Optionnel: redirection vers la page des parcours
+                // window.location.href = 'choixParcours.html';
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert('Erreur lors de l\'enregistrement du parcours');
+                alert('Erreur lors de l\'enregistrement de la course: ' + error.message);
             });
         });
-        </script>
-        
-
-   
+    </script>
 </body>
 </html>
