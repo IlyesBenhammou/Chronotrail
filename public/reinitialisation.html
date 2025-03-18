@@ -134,7 +134,8 @@
     var newPassword = document.getElementById('newPassword').value; // Nouveau mot de passe
     var confirmPassword = document.getElementById('confirmPassword').value; // Confirmation
 
-    window.onload = function() {
+    // Exécuter cette fonction au chargement de la page
+window.onload = function() {
     // Récupère les paramètres de l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -149,6 +150,49 @@
         document.getElementById('responseMessage').innerText = "Lien invalide ou expiré.";
     }
 };
+
+// Gestion de la soumission du formulaire
+document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Empêche le rechargement de la page
+
+    var username = document.getElementById('username').value; // Identifiant
+    var newPassword = document.getElementById('newPassword').value; // Nouveau mot de passe
+    var confirmPassword = document.getElementById('confirmPassword').value; // Confirmation
+    var token = document.getElementById('token').value;
+    var email = document.getElementById('email').value;
+
+    // Vérification que les mots de passe correspondent
+    if (newPassword !== confirmPassword) {
+        document.getElementById('responseMessage').innerHTML = "<p>Les mots de passe ne correspondent pas.</p>";
+        return;
+    }
+
+    // Envoyer les données au serveur via fetch ou XMLHttpRequest
+    fetch('/reset-password-submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: username,
+            newPassword: newPassword,
+            token: token,
+            email: email
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('responseMessage').innerHTML = "<p>Votre mot de passe a été réinitialisé avec succès.</p>";
+        } else {
+            document.getElementById('responseMessage').innerHTML = "<p>Erreur: " + data.message + "</p>";
+        }
+    })
+    .catch(error => {
+        document.getElementById('responseMessage').innerHTML = "<p>Une erreur s'est produite lors de la réinitialisation.</p>";
+        console.error('Error:', error);
+    });
+});
 
 
     if (newPassword !== confirmPassword) {

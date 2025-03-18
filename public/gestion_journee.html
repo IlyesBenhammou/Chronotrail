@@ -82,7 +82,7 @@
         if (feature.geometry) {
             if (feature.geometry.type === 'Point') {
                 // Pour un point, on inverse les coordonnées (latitude, longitude)
-                allCoordinates.push([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+    
             } 
             else if (feature.geometry.type === 'LineString') {
                 // Pour une ligne, on inverse chaque coordonnée (latitude, longitude)
