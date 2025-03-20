@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="gestion_des_coureurs.css">
+  <title>Fiche du Coureur</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Fiche du Coureur</h1>
+    <div class="card" id="coureurDetails">
+      <!-- Les détails du coureur seront affichés ici --> 
+      <script>
+    const coureurs = [
+      { id: 1, nom: 'Jean', prenom: 'Dupont', email: 'jean@example.com', dossard: '123', presence: true },
+      { id: 2, nom: 'Marie', prenom: 'Curie', email: 'marie@example.com', dossard: '456', presence: false },
+      { id: 3, nom: 'Pierre', prenom: 'Durand', email: 'pierre@example.com', dossard: '789', presence: true }
+    ];
+    
+    </script>
+    </div>
+    <button class="button" onclick="window.history.back()">Retour</button>
+  </div>
+
+  <!-- <script>
+    // Récupérer l'ID du coureur depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const coureurId = urlParams.get('id'); 
+
+     //Données factices (remplacez par une requête à la base de données plus tard)
+    const coureurs = [
+      { id: 1, nom: 'Jean', prenom: 'Dupont', email: 'jean@example.com', dossard: '123', presence: true },
+      { id: 2, nom: 'Marie', prenom: 'Curie', email: 'marie@example.com', dossard: '456', presence: false },
+      { id: 3, nom: 'Pierre', prenom: 'Durand', email: 'pierre@example.com', dossard: '789', presence: true }
+    ];
+
+    // Trouver le coureur correspondant
+    // const coureur = coureurs.find(c => c.id === parseInt(coureurId));
+
+    // // Afficher les détails du coureur
+    // if (coureur) {
+    //   const coureurDetails = document.getElementById('coureurDetails');
+    //   coureurDetails.innerHTML = `
+    //     <p><strong>Nom:</strong> ${coureur.nom}</p>
+    //     <p><strong>Prénom:</strong> ${coureur.prenom}</p>
+    //     <p><strong>Email:</strong> ${coureur.email}</p>
+    //     <p><strong>Dossard:</strong> ${coureur.dossard}</p>
+    //     <p><strong>Présence:</strong> ${coureur.presence ? 'Validée' : 'Non validée'}</p>
+    //   `;
+    // } else {
+    //   document.getElementById('coureurDetails').innerHTML = '<p>Coureur non trouvé.</p>';
+    // }
+  </script> -->
+
+
+</body>
+</html>

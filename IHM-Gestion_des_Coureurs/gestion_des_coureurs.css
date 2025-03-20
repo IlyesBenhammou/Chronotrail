@@ -1,51 +1,84 @@
-    body {
-      font-family: Arial, sans-serif;
-    }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0; /* Supprimer la marge par défaut */
+  padding: 0; /* Supprimer le padding par défaut */
+  background-image: url('/IHM-Gestion_des_Coureurs/Image/Fond_gestions_coureurs.jpg'); /* Chemin de l'image */
+  background-size: cover; /* Couvrir toute la page */
+  background-position: center; /* Centrer l'image */
+  background-repeat: no-repeat; /* Ne pas répéter l'image */
+  background-attachment: fixed; /* Fixer l'image pour qu'elle ne défile pas */
+  min-height: 100vh; /* Hauteur minimale de la page = 100% de la hauteur de la vue */
+  display: flex; /* Utiliser Flexbox pour centrer le contenu */
+  justify-content: center; /* Centrer horizontalement */
+  align-items: center; /* Centrer verticalement */
+}
 
-    .container {
-      width: 80%;
-      margin: 0 auto;
-    }
+.container {
+  width: 80%;
+  margin: 0 auto;
+  background-color: rgba(255, 255, 255, 0.8); /* Fond blanc semi-transparent */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Ombre légère */
 
-    .card {
-      border: 1px solid #ccc;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-    }
+}
 
-    .player-list {
-      margin-top: 20px;
-    }
+.card {
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.9); /* Fond blanc légèrement transparent */
+}
 
-    .player {
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+.player-list {
+  margin-top: 20px;
+}
 
-    .button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 15px;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-      margin-left: 5px;
-    }
+.player {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.9); /* Fond blanc légèrement transparent */
+}
 
-    .button:hover {
-      background-color: #45a049;
-    }
+.button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-left: 5px;
+}
 
-    .presence-validated {
-      background-color: #d4edda;
-    }
+.button.view-details {
+  background-color: #007bff; /* Couleur bleue pour le bouton "Visualiser la fiche détaillée" */
+}
 
-    .dossard-assigned {
-      background-color: #cce5ff;
-    }
+.button.view-details:hover {
+  background-color: #0056b3; /* Couleur bleue foncée au survol */
+}
+
+.button:hover {
+  background-color: #45a049;
+}
+
+/* Style pour la présence validée (vert) */
+.presence-validated {
+  background-color: #d4edda;
+}
+
+/* Style pour la non-présence validée (rouge) */
+.non-presence-validated {
+  background-color: #f8d7da; /* Rouge clair */
+  border-color: #f5c6cb; /* Bordure rouge */
+}
+
+.dossard-assigned {
+  background-color: #cce5ff;
+}
