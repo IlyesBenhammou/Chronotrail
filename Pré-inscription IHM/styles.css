@@ -1,0 +1,116 @@
+/* Style général */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url('image 1.jpg'); /* Remplace 'verdure.jpg' par le nom de ton fichier */
+    background-size: cover;  /* Permet à l'image de couvrir toute la page */
+    background-position: center; /* Centre l'image */
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Conteneur principal */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* En-tête */
+header {
+    background: rgba(255, 255, 255, 0.8); 
+    padding: 30px;
+    border-radius: 15px;  
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); 
+    margin-bottom: 20px;
+    text-align: center;
+    
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #28a745;
+}
+
+header p {
+    margin: 10px 0 0;
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+section {
+    background: rgba(255, 255, 255, 0.8); /* Fond semi-transparent pour ne pas cacher l'image */
+    padding: 30px;
+    border-radius: 15px;  
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); 
+    margin-bottom: 20px;
+}
+
+section h2 {
+    color: #28a745;
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+section p {
+    font-size: 1.1em;
+    color: #555;
+}
+
+/* Liste des courses */
+.courses-list {
+    list-style: none;
+    padding: 0;
+}
+
+.courses-list li {
+    background: #f1f1f1;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 1.1em;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.course-time {
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* Bouton */
+.button {
+    display: inline-block;
+    padding: 15px 30px;
+    background: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    transition: background 0.3s ease;
+    
+}
+
+.button:hover {
+    background: #218838;
+}
+
+/* Pied de page */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    background: #333;
+    color: white;
+    border-radius: 10px;
+}
+
+footer p {
+    margin: 0;
+    font-size: 0.9em;
+}
