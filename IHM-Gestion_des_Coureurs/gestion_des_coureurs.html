@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="gestion_des_coureurs.css">
+  <title>Gestion des Coureurs</title>
+  
+</head>
+<body>
+
+  <div class="container">
+    <h1>Gestion des Coureurs</h1>
+    
+    <!-- Liste des joueurs -->
+    <h2>Liste des coureurs</h2>
+    <div class="card">
+      <div class="player-list" id="playerList">
+        <!-- Liste des coureurs ajoutée dynamiquement ici -->
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Liste de coureurs statiques (les informations des coureurs)
+    const coureurs = [
+      { nom: 'Jean', prenom: 'Dupont', email: 'jean@example.com', dossard: '', presence: false },
+      { nom: 'Marie', prenom: 'Curie', email: 'marie@example.com', dossard: '', presence: false },
+      { nom: 'Pierre', prenom: 'Durand', email: 'pierre@example.com', dossard: '', presence: false }
+    ];
+
+    // Fonction pour afficher les coureurs
+    function displayPlayers() {
+      const playerListElement = document.getElementById('playerList');
+      playerListElement.innerHTML = ''; // Clear any existing players
+
+      coureurs.forEach((player, index) => {
+        const playerElement = document.createElement('div');
+        playerElement.classList.add('player');
+        
+        playerElement.innerHTML = `
+          <span>${player.nom} ${player.prenom}</span>
+          <div>
+            <button class="button" onclick="validatePresence(${index})">
+              ${player.presence ? 'Présence validée' : 'Valider présence'}
+            </button>
+            <button class="button" onclick="assignDossard(${index})">
+              ${player.dossard ? `Dossard ${player.dossard}` : 'Affecter un dossard'}
+            </button>
+          </div>
+        `;
+
+        // Ajout d'un style différent si la présence est validée ou si le dossard est affecté
+        if (player.presence) {
+          playerElement.classList.add('presence-validated');
+        }
+        if (player.dossard) {
+          playerElement.classList.add('dossard-assigned');
+        }
+
+        playerListElement.appendChild(playerElement);
+      });
+    }
+
+    // Fonction pour valider la présence d'un coureur
+    function validatePresence(index) {
+      coureurs[index].presence = true;
+      displayPlayers(); // Réafficher la liste après la validation
+    }
+
+    // Fonction pour affecter un dossard à un coureur
+    function assignDossard(index) {
+      // Demander un numéro de dossard à l'utilisateur
+      const dossardNumber = prompt('Entrez le numéro de dossard:');
+      if (dossardNumber) {
+        coureurs[index].dossard = dossardNumber;
+        displayPlayers(); // Réafficher la liste après l'affectation du dossard
+      }
+    }
+
+    // Affichage initial des coureurs
+    displayPlayers();
+  </script>
+
+</body>
+</html>
