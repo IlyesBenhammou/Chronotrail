@@ -3,14 +3,13 @@ body {
     font-family: 'Roboto', sans-serif;
     margin: 0;
     padding: 0;
-    background-image: url('image 1.jpg'); /* Remplace 'verdure.jpg' par le nom de ton fichier */
-    background-size: cover;  /* Permet à l'image de couvrir toute la page */
-    background-position: center; /* Centre l'image */
+    background-image: url('image 1.jpg'); /* Image de fond */
+    background-size: cover;
+    background-position: center;
     color: #333;
     line-height: 1.6;
 }
 
-/* Conteneur principal */
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -19,15 +18,16 @@ body {
 
 /* En-tête */
 header {
-    background: rgba(255, 255, 255, 0.8); 
+    background: rgba(255, 255, 255, 0.8);
     padding: 30px;
-    border-radius: 15px;  
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); 
-    margin-bottom: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     text-align: center;
-    
+    margin-bottom: 40px; 
 }
-
+#description {
+    margin-top: 20px; /* Ajoute un espace entre le header et cette section */
+}
 header h1 {
     margin: 0;
     font-size: 2.5em;
@@ -36,28 +36,21 @@ header h1 {
 }
 
 header p {
-    margin: 10px 0 0;
     font-size: 1.2em;
-    opacity: 0.9;
 }
 
+/* Sections */
 section {
-    background: rgba(255, 255, 255, 0.8); /* Fond semi-transparent pour ne pas cacher l'image */
+    background: rgba(255, 255, 255, 0.8);
     padding: 30px;
-    border-radius: 15px;  
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); 
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     margin-bottom: 20px;
 }
 
 section h2 {
     color: #28a745;
     font-size: 2em;
-    margin-bottom: 20px;
-}
-
-section p {
-    font-size: 1.1em;
-    color: #555;
 }
 
 /* Liste des courses */
@@ -66,21 +59,31 @@ section p {
     padding: 0;
 }
 
-.courses-list li {
+.courses-list > li {
     background: #f1f1f1;
-    margin: 10px 0;
+    margin: 15px 0;
     padding: 15px;
     border-radius: 5px;
-    font-size: 1.1em;
+    font-size: 1.2em;
+    font-weight: bold;
     color: #333;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
-.course-time {
-    font-weight: bold;
-    color: #28a745;
+.courses-list > li ul {
+    list-style-type: none;
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.courses-list > li ul li {
+    font-size: 1em;
+    background: #e9e9e9;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
 }
 
 /* Bouton */
@@ -95,6 +98,9 @@ section p {
     transition: background 0.3s ease;
     
 }
+#cta {
+    text-align: center;
+}
 
 .button:hover {
     background: #218838;
@@ -103,7 +109,6 @@ section p {
 /* Pied de page */
 footer {
     text-align: center;
-    margin-top: 40px;
     padding: 20px;
     background: #333;
     color: white;
