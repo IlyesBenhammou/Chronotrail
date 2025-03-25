@@ -1,30 +1,49 @@
-import RPi.GPIO as GPIO
-from mfrc522 import SimpleMFRC522
 import requests
+import time
+from mfrc522 import SimpleMFRC522
 
-# URL du serveur sur le 2e Raspberry Pi
+# Correspondance UID → Numéro de dossard
+uid_to_dossard = {
+    "802295430720": 1,
+    "398878301859": 2,
+    "913068665419": 3,
+    "932696208197": 4
+}
+
+# Adresse du serveur
 server_url = "http://172.30.232.10:4000/api/rfid"
 
-# Initialiser le lecteur RFID
+# Initialisation du lecteur RFID
 reader = SimpleMFRC522()
 
 print("📡 Place une carte RFID sur le lecteur...")
 
 try:
     while True:
-        id, text = reader.read()  # Lire l'UID et le texte associé de la carte RFID
-        print(f"🎫 Carte détectée ! UID : {id}")
+        # Lire la carte
+        uid, _ = reader.read_no_block()
         
-        # Envoi de l'UID au serveur via une requête POST
-        payload = {'id': str(id)}  # Envoi de l'UID comme données
-        response = requests.post(server_url, json=payload)  # Envoi au serveur
+        if uid:
+            uid_str = str(uid)
+            print(f"🎫 Carte détectée ! UID : {uid_str}")
+
+            # Récupérer le numéro de dossard
+            dossard = uid_to_dossard.get(uid_str, "Inconnu")
+
+            # Envoyer au serveur
+            payload = {"dossard": dossard}
+            try:
+                response = requests.post(server_url, json=payload)
+                if response.status_code == 200:
+                    print(f"✅ Dossard {dossard} envoyé avec succès au serveur.")
+                else:
+                    print(f"⚠️ Erreur d'envoi : {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"❌ Erreur de connexion : {e}")
         
-        # Vérification si la requête a réussi
-        if response.status_code == 200:
-            print("✅ UID envoyé avec succès au serveur.")
-        else:
-            print(f"❌ Erreur lors de l'envoi de l'UID : {response.status_code}")
+        time.sleep(1)  # Petite pause pour éviter la lecture en boucle
+
 except KeyboardInterrupt:
-    print("\n🔴 Arrêt du programme")
+    print("\n🔴 Arrêt du programme.")
 finally:
-    GPIO.cleanup()  # Nettoyer les GPIO pour éviter tout conflit
+    reader.close()
