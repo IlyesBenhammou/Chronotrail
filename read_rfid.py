@@ -10,7 +10,7 @@ uid_to_dossard = {
     "932696208197": 4
 }
 
-# Adresse du serveur
+# Adresse du serveur sur le Raspberry Pi 2
 server_url = "http://172.30.232.10:4000/api/rfid"
 
 # Initialisation du lecteur RFID
@@ -20,17 +20,17 @@ print("📡 Place une carte RFID sur le lecteur...")
 
 try:
     while True:
-        # Lire la carte
+        # Lire la carte RFID
         uid, _ = reader.read_no_block()
         
         if uid:
-            uid_str = str(uid)
-            print(f"🎫 Carte détectée ! UID : {uid_str}")
+            uid_hex = format(uid, 'X')  # Convertit l'UID en hexadécimal
+            print(f"🎫 Carte détectée ! UID : {uid_hex}")
 
-            # Récupérer le numéro de dossard
-            dossard = uid_to_dossard.get(uid_str, "Inconnu")
+            # Associer l'UID à un dossard
+            dossard = uid_to_dossard.get(str(uid), "Inconnu")
 
-            # Envoyer au serveur
+            # Envoi au serveur
             payload = {"dossard": dossard}
             try:
                 response = requests.post(server_url, json=payload)
@@ -41,7 +41,7 @@ try:
             except requests.exceptions.RequestException as e:
                 print(f"❌ Erreur de connexion : {e}")
         
-        time.sleep(1)  # Petite pause pour éviter la lecture en boucle
+        time.sleep(1)  # Pause pour éviter la lecture en boucle
 
 except KeyboardInterrupt:
     print("\n🔴 Arrêt du programme.")
