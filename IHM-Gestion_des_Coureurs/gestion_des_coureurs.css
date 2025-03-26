@@ -82,3 +82,27 @@ body {
 .dossard-assigned {
   background-color: #cce5ff;
 }
+
+/* Pied de page */
+footer {
+  text-align: center;
+  padding: 20px;
+  background: #333;
+  color: white;
+  border-radius: 10px;
+  position: absolute; /* Positionner le footer de manière absolue */
+  bottom: 20px; /* Distance du bas de la page */
+  left: 50%; /* Centrer horizontalement */
+  transform: translateX(-50%); /* Ajuster pour un vrai centrage horizontal */
+  width : 80%;
+
+
+}
+
+
+
+footer p {
+  margin: 0;
+  font-size: 0.9em;
+}
+

@@ -1,4 +1,4 @@
-// Liste de coureurs statiques (les informations des coureurs)
+// Liste de coureurs statiques (les informations des coureurs) factice 
 const coureurs = [
     { id: 1, nom: 'Jean', prenom: 'Dupont', email: 'jean@example.com', dossard: '', presence: null }, // null = non défini
     { id: 2, nom: 'Marie', prenom: 'Curie', email: 'marie@example.com', dossard: '', presence: null },

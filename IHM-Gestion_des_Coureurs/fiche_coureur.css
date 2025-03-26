@@ -1,0 +1,68 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url('/IHM-Gestion_des_Coureurs/Image/coureur.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .container {
+    width: 80%;
+    margin: 0 auto;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card {
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .button:hover {
+    background-color: #45a049;
+  }
+  
+
+  /* Pied de page */
+footer {
+    text-align: center;
+    padding: 20px;
+    background: #333;
+    color: white;
+    border-radius: 10px;
+    position: absolute; /* Positionner le footer de manière absolue */
+    bottom: 20px; /* Distance du bas de la page */
+    left: 50%; /* Centrer horizontalement */
+    transform: translateX(-50%); /* Ajuster pour un vrai centrage horizontal */
+    width : 80%;
+  
+  
+  }
+  
+  
+  
+  footer p {
+    margin: 0;
+    font-size: 0.9em;
+  }
