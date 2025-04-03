@@ -2,6 +2,8 @@ import requests
 import time
 from mfrc522 import SimpleMFRC522
 
+debut_temps = {}  # Dictionnaire pour stocker les temps de départ
+
 # Correspondance UID → Numéro de dossard
 uid_to_dossard = {
     "802295430720": 1,
@@ -20,7 +22,7 @@ print("📡 Place une carte RFID sur le lecteur...")
 
 try:
     while True:
-        # Lire la carte RFID
+        # Lire la carte RFID ratio 
         uid, _ = reader.read_no_block()
         
         if uid:
@@ -31,18 +33,18 @@ try:
             dossard = uid_to_dossard.get(str(uid), "Inconnu")
 
          
-            if dossard != "Inconnu" and dossard not in start_times:
-                start_times[dossard] = time.time()
+            if dossard != None and dossard not in debut_temps:
+                debut_temps[dossard] = time.time()
                 print(f"⏱️ Début de la course pour le dossard {dossard}.")
                 
             
-            elif dossard != "Inconnu" and dossard in start_times:
-                end_time = time.time()
-                elapsed_time = end_time - start_times[dossard]
-                print(f"⏱️ Fin de la course pour le dossard {dossard}. Temps écoulé : {elapsed_time:.2f} secondes.")
+            elif dossard != None and dossard in debut_temps:
+                temps_fin = time.time()
+                chrono = temps_fin - debut_temps[dossard]
+                print(f"⏱️ Fin de la course pour le dossard {dossard}. Temps écoulé : {chrono:.2f} secondes.")
 
             # Envoi au serveur
-            payload = {"dossard": dossard, "temps": round(elapsed_time, 2)}
+            payload = {"dossard": dossard, "temps": round(chrono, 2)}
             try:
                 response = requests.post(server_url, json=payload)
                 if response.status_code == 200:
@@ -56,5 +58,7 @@ try:
 
 except KeyboardInterrupt:
     print("\n🔴 Arrêt du programme.")
+    print("\n🔴 Ratio :)")
+
 finally:
     reader.close()
