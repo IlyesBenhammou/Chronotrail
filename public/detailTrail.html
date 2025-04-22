@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte du Trail</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <link rel="stylesheet" type="text/css" href="styleCourse.css">
+</head>
+<body>
+    <div id="loading-message" class="loading">Chargement du parcours...</div>
+    <div id="error-message" class="error" style="display: none;"></div>
+    
+    <div id="course-info" class="course-info" style="display: none;">
+        <h1 id="trail-title">Carte du Trail</h1>
+        <div id="course-details" class="info-grid">
+            <!-- Les détails du parcours seront injectés ici -->
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('id') || 1;
+
+        const map = L.map('map').setView([46.603354, 1.888334], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Non spécifiée';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function processCoordinates(data) {
+            try {
+                const coords = typeof data === 'string' ? JSON.parse(data) : data;
+                if (!Array.isArray(coords)) return [];
+                return coords
+                    .filter(c => Array.isArray(c) && c.length === 2)
+                    .map(c => [c[0], c[1]]);
+            } catch (e) {
+                console.error("Erreur parsing coordonnée:", e);
+                return [];
+            }
+        }
+
+        fetch(`http://localhost:3000/course/${courseId}`)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(course => {
+                document.getElementById('loading-message').style.display = 'none';
+                document.getElementById('course-info').style.display = 'block';
+
+                document.getElementById('trail-title').innerText = course.nomcourse || `Course #${course.idcourse}`;
+
+                const details = [
+                    { label: 'Date ', value: course.heurecourse},
+                    { label: 'Départ ', value: course.depart || 'Non spécifié' },
+                    { label: 'Arrivée ', value: course.arrive || 'Non spécifié' },
+                    { label: 'Participants Max ', value: course.nb_maxparticipants || 50 },
+                    { label: 'Temps final estimé ', value: course.tempsfinal ? `${course.tempsfinal} h` : 'Non renseigné' }
+                ];
+
+                const container = document.getElementById('course-details');
+                details.forEach(d => {
+                    const div = document.createElement('div');
+                    div.className = 'info-item';
+                    div.innerHTML = `<span class="info-label">${d.label}</span><span class="info-value">${d.value}</span>`;
+                    container.appendChild(div);
+                });
+
+                const coordinates = processCoordinates(course.coordonee);
+
+                if (coordinates.length > 0) {
+                    const polyline = L.polyline(coordinates, {
+                        color: 'blue',
+                        weight: 5,
+                        opacity: 0.7
+                    }).addTo(map);
+
+                    L.marker(coordinates[0]).addTo(map).bindPopup('Départ');
+                    L.marker(coordinates[coordinates.length - 1]).addTo(map).bindPopup('Arrivée');
+
+                    map.fitBounds(polyline.getBounds());
+                } else {
+                    const msg = document.createElement('div');
+                    msg.className = 'error';
+                    msg.innerText = "Pas de coordonnées disponibles pour ce parcours.";
+                    container.appendChild(msg);
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading-message').style.display = 'none';
+                document.getElementById('error-message').innerText = `Erreur: ${err.message}`;
+                document.getElementById('error-message').style.display = 'block';
+            });
+    </script>
+</body>
+</html>

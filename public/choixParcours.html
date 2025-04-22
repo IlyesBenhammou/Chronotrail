@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="styleGestionJourneCoureur.css">
+    <title>Choix du Parcours de Trail</title>
+</head>
+<body>
+    <h1>Choisissez un Parcours de Trail</h1>
+    
+    <div id="loading-message" class="loading">Chargement des parcours...</div>
+    <div id="error-message" class="error" style="display: none;"></div>
+    
+    <div id="parcours-container">
+        <!-- Les parcours seront chargés dynamiquement ici -->
+    </div>
+    
+    <script>
+        // Charger tous les parcours depuis l'API
+        fetch('http://localhost:3000/courses')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(courses => {
+                const container = document.getElementById('parcours-container');
+                document.getElementById('loading-message').style.display = 'none';
+                
+                if (!courses || courses.length === 0) {
+                    document.getElementById('error-message').innerText = "Aucun parcours disponible.";
+                    document.getElementById('error-message').style.display = 'block';
+                    return;
+                }
+                
+               // Créer une carte pour chaque parcours
+courses.forEach(course => {
+    const card = document.createElement('div');
+    card.className = 'parcours-card';
+    card.onclick = () => redirectToTrail(course.idcourse); // Utiliser idcourse au lieu de id
+    
+    // Afficher uniquement l'heure (sans formatage)
+    let heureStr = '';
+    if (course.heurecourse) { // Utiliser heurecourse au lieu de date
+        heureStr = course.heurecourse; // Afficher directement l'heure (ou la chaîne de texte)
+    }
+    
+    // Créer le contenu HTML de la carte dans une nouvelle box
+    card.innerHTML = `
+    <div class="parcours-content">
+        <h3>${course.nomcourse || `Parcours #${course.idcourse}`}</h3>
+        <p class="location">Départ: ${course.depart} → Arrivée: ${course.arrive}</p>
+        <p class="heure">${heureStr}</p> <!-- Affiche l'heure directement -->
+        <p class="participants">Max participants: ${course.nb_maxparticipants}</p>
+    </div>
+    `;
+    
+    container.appendChild(card);
+});
+
+            })
+            .catch(error => {
+                console.error("Erreur lors du chargement des parcours:", error);
+                document.getElementById('loading-message').style.display = 'none';
+                document.getElementById('error-message').innerText = `Erreur: ${error.message}`;
+                document.getElementById('error-message').style.display = 'block';
+            });
+        
+        // Fonction pour rediriger vers la page de carte avec l'ID du parcours
+        function redirectToTrail(id) {
+            window.location.href = `detailTrail.html?id=${id}`;
+        }
+    </script>
+</body>
+</html>
