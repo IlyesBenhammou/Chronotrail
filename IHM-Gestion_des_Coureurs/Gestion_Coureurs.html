@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Coureurs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
+            --neutral-200: #e2e8f0;
+            --neutral-300: #cbd5e1;
+            --neutral-700: #334155;
+            --neutral-800: #1e293b;
+            --neutral-900: #0f172a;
+            --radius: 0.5rem;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--neutral-100);
+            color: var(--neutral-800);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* Header Styles */
+        .app-header {
+            background-color: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--neutral-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .app-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin: 0;
+        }
+
+        .app-title p {
+            color: var(--secondary);
+            font-size: 0.95rem;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Main Content Styles */
+        .app-content {
+            padding: 1.5rem 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--neutral-800);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--neutral-200);
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+        }
+
+        thead tr {
+            background-color: var(--neutral-50);
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--neutral-700);
+            text-transform: none;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--neutral-200);
+            font-size: 0.95rem;
+            color: var(--neutral-800);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: var(--neutral-50);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-present {
+            background-color: rgba(22, 163, 74, 0.1);
+            color: var(--success);
+        }
+
+        .status-absent {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+        }
+
+        .status-pending {
+            background-color: rgba(100, 116, 139, 0.1);
+            color: var(--secondary);
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            outline: none;
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            border-radius: var(--radius);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-dark);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-dark);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--neutral-300);
+            color: var(--neutral-700);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--neutral-100);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Utils */
+        .text-center {
+            text-align: center;
+        }
+
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
+        }
+
+        /* Loader */
+        .loader-container {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--neutral-200);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--neutral-700);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--neutral-300);
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-message {
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            color: var(--neutral-700);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .app-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            th, td {
+                padding: 0.75rem;
+            }
+
+            .btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="card">
+            <div class="app-header">
+                <div class="app-title">
+                    <h1>Gestion des Coureurs</h1>
+                    <p>Système de gestion des participants aux événements sportifs</p>
+                </div>
+                <div class="app-actions">
+                    <button class="btn btn-outline" id="refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-content">
+                <div class="section-header">
+                    <h2 class="section-title">Liste des participants</h2>
+                    <div class="count" id="coureurs-count"></div>
+                </div>
+
+                <div class="table-container">
+                    <table id="coureurs-table">
+                        <thead>
+                            <tr>
+                                <th>Dossard</th>
+                                <th>Nom</th>
+                                <th>Prénom</th>
+                                <th>Date de naissance</th>
+                                <th>Email</th>
+                                <th>Téléphone</th>
+                                <th>Accord Photo</th>
+                                <th>Présence</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coureurs-body">
+                            <!-- Le contenu sera chargé dynamiquement -->
+                        </tbody>
+                    </table>
+                    <div id="loader" class="loader-container">
+                        <div class="loader"></div>
+                    </div>
+                    <div id="empty-state" class="empty-state" style="display: none;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-running"></i>
+                        </div>
+                        <h3 class="empty-state-title">Aucun coureur trouvé</h3>
+                        <p class="empty-state-message">Il n'y a aucun coureur enregistré pour le moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        const API_BASE_URL = "http://172.30.232.10:8080/api/coureurs";
+        let coureursData = [];
+
+        // DOM Elements
+        const coureursBody = document.getElementById("coureurs-body");
+        const coureursCount = document.getElementById("coureurs-count");
+        const loader = document.getElementById("loader");
+        const emptyState = document.getElementById("empty-state");
+        const refreshBtn = document.getElementById("refresh-btn");
+        const toastContainer = document.getElementById("toast-container");
+
+        // Event Listeners
+        document.addEventListener("DOMContentLoaded", initialize);
+        refreshBtn.addEventListener("click", fetchCoureurs);
+
+        function initialize() {
+            fetchCoureurs();
+        }
+
+        function fetchCoureurs() {
+            showLoader();
+            fetch(`${API_BASE_URL}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur lors de la récupération des données.");
+                    return response.json();
+                })
+                .then(data => {
+                    coureursData = data;
+                    renderTable();
+                    updateCoureursCount();
+                    showNotification("Succès", "Les données ont été chargées avec succès.", "success");
+                })
+                .catch(error => {
+                    console.error("Erreur de récupération :", error);
+                    showNotification("Erreur", "Impossible de charger les données. Veuillez réessayer.", "error");
+                })
+                .finally(() => {
+                    hideLoader();
+                });
+        }
+
+        function sendToDatabase(coureur) {
+            showNotification("En cours", "Mise à jour des données...", "info");
+            fetch(`${API_BASE_URL}/${coureur.idcoureur}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(coureur),
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur lors de l'envoi des données.");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Données mises à jour avec succès :", data);
+                    showNotification("Succès", `Statut du coureur ${coureur.nomcoureur} mis à jour avec succès.`, "success");
+                })
+                .catch(error => {
+                    console.error("Erreur lors de l'envoi :", error);
+                    showNotification("Erreur", "Échec de la mise à jour. Veuillez réessayer.", "error");
+                });
+        }
+
+        function renderTable() {
+            if (coureursData.length === 0) {
+                showEmptyState();
+                return;
+            }
+            
+            hideEmptyState();
+            coureursBody.innerHTML = "";
+            
+            coureursData.forEach((coureur, index) => {
+                const row = document.createElement("tr");
+                
+                // Format de la date de naissance
+                const dateObj = new Date(coureur.datenaissance);
+                const formattedDate = dateObj.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                
+                const presenceStatus = coureur.present ? 'Présent' : 'Absent';
+                const statusClass = coureur.present ? 'status-present' : 'status-absent';
+                const statusIcon = coureur.present ? 'fa-check-circle' : 'fa-times-circle';
+                
+                row.innerHTML = `
+                    <td>${coureur.idcoureur}</td>
+                    <td>${coureur.nomcoureur}</td>
+                    <td>${coureur.prenomcoureur}</td>
+                    <td>${formattedDate}</td>
+                    <td class="truncate" title="${coureur.email}">${coureur.email}</td>
+                    <td>${coureur.telephone}</td>
+                    <td>${coureur.accordphoto === 't' ? 
+                          '<span class="status status-present"><i class="fas fa-check"></i> Oui</span>' : 
+                          '<span class="status status-absent"><i class="fas fa-times"></i> Non</span>'}</td>
+                    <td>
+                        <span class="status ${statusClass}">
+                            <i class="fas ${statusIcon}"></i>
+                            ${presenceStatus}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-icon" onclick="updatePresence(${index}, true)" title="Marquer comme présent">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-danger btn-icon" onclick="updatePresence(${index}, false)" title="Marquer comme absent">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                coureursBody.appendChild(row);
+            });
+        }
+
+        function updatePresence(index, status) {
+            coureursData[index].present = status;
+            sendToDatabase(coureursData[index]);
+            renderTable();
+        }
+
+        function updateCoureursCount() {
+            coureursCount.textContent = `${coureursData.length} participant${coureursData.length > 1 ? 's' : ''}`;
+        }
+
+        function showLoader() {
+            loader.style.display = "flex";
+            coureursBody.style.display = "none";
+        }
+
+        function hideLoader() {
+            loader.style.display = "none";
+            coureursBody.style.display = "";
+        }
+
+        function showEmptyState() {
+            emptyState.style.display = "block";
+            document.getElementById("coureurs-table").style.display = "none";
+        }
+
+        function hideEmptyState() {
+            emptyState.style.display = "none";
+            document.getElementById("coureurs-table").style.display = "table";
+        }
+
+        function showNotification(title, message, type = "info") {
+            const toast = document.createElement("div");
+            toast.className = `toast toast-${type}`;
+            
+            let iconClass = "fa-info-circle";
+            if (type === "success") iconClass = "fa-check-circle";
+            if (type === "error") iconClass = "fa-exclamation-circle";
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas ${iconClass}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close">
+                    <i class="fas fa-times"></i>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Close toast on click
+            toast.querySelector(".toast-close").addEventListener("click", () => {
+                toast.remove();
+            });
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(10px)";
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Expose functions to global scope for onclick handlers
+        window.updatePresence = updatePresence;
+    </script>
+</body>
+</html>
