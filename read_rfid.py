@@ -2,36 +2,29 @@ import requests
 import time
 from mfrc522 import SimpleMFRC522
 
-server_url = "http://172.30.232.10:4000/api/temps-course"
+url_temps = "http://172.30.232.10:4000/api/temps-course"
 reader = SimpleMFRC522()
 
-print("📡 Passez votre carte pour enregistrer le temps de course...")
+print("📢 Passez votre carte RFID...")
 
 try:
     while True:
         uid, _ = reader.read_no_block()
-        
         if uid:
-            uid_hex = format(uid, 'X')
-            print(f"🎫 Carte détectée ! UID : {uid_hex}")
-
-            payload = {"uid": uid_hex}
+            uid_str = format(uid, 'X')
+            print(f"🎫 Carte détectée ! UID : {uid_str}")
             try:
-                response = requests.post(server_url, json=payload)
+                response = requests.post(url_temps, json={"uid": uid_str})
                 if response.status_code == 200:
                     data = response.json()
                     if "temps" in data:
-                        print(f"🏁 Temps final : {data['temps']} sec - {data['nom_coureur']} (Dossard {data['dossard']}, Course {data['id_course']})")
-                    elif data["message"] == "Départ enregistré":
-                        print(f"✅ Départ enregistré pour {data['nom_coureur']} (Dossard {data['dossard']}, Course {data['id_course']})")
+                        print(f"⏱️ Temps final : {data['temps']} sec pour Dossard {data['dossard']}")
+                    else:
+                        print(f"✅ {data['message']}")
                 else:
-                    print(f"⚠️ Erreur d'envoi : {response.status_code}")
+                    print(f"⚠️ Erreur : {response.status_code} - {response.text}")
             except requests.exceptions.RequestException as e:
                 print(f"❌ Erreur de connexion : {e}")
-        
         time.sleep(1)
-
 except KeyboardInterrupt:
-    print("\n🔴 Arrêt du programme.")
-finally:
-    reader.close()
+    print("🛑 Arrêt du programme.")

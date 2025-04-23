@@ -1,69 +1,69 @@
 const express = require("express");
-const cors = require("cors");
+const app = express();
+const port = 4000;
 const { Pool } = require("pg");
 
-const app = express();
-const PORT = 4000;
-
-// 🔧 Connexion PostgreSQL
-const pool = new Pool({
-    user: "admin",
-    host: "localhost",
-    database: "trail",
-    password: "admin",
-    port: 5432
-});
-
-app.use(cors());
 app.use(express.json());
 
-// 📡 API pour enregistrer les temps de course (départ/arrivée)
-app.post("/api/temps-course", async (req, res) => {
-    const { uid } = req.body;
-
-    if (!uid) {
-        return res.status(400).json({ error: "UID requis" });
-    }
-
-    try {
-        // Vérifier si l'UID est inscrit dans une course
-        let result = await pool.query(
-            "SELECT id_course, dossard, nom_coureur, date_depart, temps FROM participants WHERE uid = $1",
-            [uid]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: "UID non trouvé dans une course." });
-        }
-
-        let { id_course, dossard, nom_coureur, date_depart, temps } = result.rows[0];
-
-        if (date_depart === null) {
-            // 🔄 Premier passage → Départ
-            await pool.query("UPDATE participants SET date_depart = NOW() WHERE uid = $1", [uid]);
-            console.log(`✅ Départ enregistré pour ${nom_coureur} (Dossard ${dossard}, Course ${id_course})`);
-            return res.json({ message: "Départ enregistré", dossard, id_course, nom_coureur });
-        } else if (temps === null) {
-            // 🏁 Deuxième passage → Arrivée
-            let resultTime = await pool.query(
-                "SELECT EXTRACT(EPOCH FROM (NOW() - date_depart)) AS elapsed_time FROM participants WHERE uid = $1",
-                [uid]
-            );
-            let elapsedTime = parseFloat(resultTime.rows[0].elapsed_time).toFixed(2);
-
-            // Mettre à jour le temps final
-            await pool.query("UPDATE participants SET temps = $1 WHERE uid = $2", [elapsedTime, uid]);
-            console.log(`🏁 Temps final : ${elapsedTime} sec - ${nom_coureur} (Dossard ${dossard}, Course ${id_course})`);
-            return res.json({ message: "Temps de course enregistré", dossard, id_course, nom_coureur, temps: elapsedTime });
-        }
-
-    } catch (err) {
-        console.error("❌ Erreur PostgreSQL :", err);
-        res.status(500).json({ error: "Erreur serveur" });
-    }
+const pool = new Pool({
+  user: "postgres",
+  host: "localhost",
+  database: "trail",
+  password: "Mdp-p0$tRoot",
+  port: 5432,
 });
 
-// 🚀 Lancer le serveur
-app.listen(PORT, () => {
-    console.log(`🚀 Serveur en écoute sur http://0.0.0.0:${PORT}`);
+// Route pour l’enregistrement des temps de course
+app.post("/api/temps-course", async (req, res) => {
+  const { uid } = req.body;
+
+  try {
+    // Vérifie si le dossard existe avec ce RFID
+    const result = await pool.query(
+      "SELECT * FROM dossards WHERE uid = $1",
+      [uid]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: "⚠️ Aucun dossard avec ce RFID" });
+    }
+
+    const dossard = result.rows[0];
+
+    // Vérifie si l'heure de départ est déjà enregistrée
+    if (!dossard.heure_depart) {
+      await pool.query(
+        "UPDATE dossards SET heure_depart = CURRENT_TIMESTAMP WHERE uid = $1",
+        [uid]
+      );
+      console.log(`🏁 Départ enregistré pour Dossard ${dossard.numero}`);
+      return res.status(200).json({
+        message: `Départ enregistré pour Dossard ${dossard.numero}`,
+        dossard: dossard.numero,
+      });
+    } else {
+      // Si le départ existe déjà, on calcule le temps final
+      const resultArrivee = await pool.query(
+        `UPDATE dossards SET heure_arrivee = CURRENT_TIMESTAMP 
+         WHERE uid = $1 RETURNING heure_depart, heure_arrivee, numero`,
+        [uid]
+      );
+
+      const { heure_depart, heure_arrivee, numero } = resultArrivee.rows[0];
+      const temps = (new Date(heure_arrivee) - new Date(heure_depart)) / 1000;
+
+      console.log(`⏱️ Temps final : ${temps} sec pour Dossard ${numero}`);
+      return res.status(200).json({
+        temps,
+        dossard: numero,
+      });
+    }
+  } catch (error) {
+    console.error("Erreur enregistrement du temps:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Serveur démarré sur le port ${port}`);
 });
