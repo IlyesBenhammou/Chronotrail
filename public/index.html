@@ -5,24 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChronoTrail - Une journée, 10 courses !</title>
     <link rel="stylesheet" href="styles.css">
-    
-    <link rel="icon" type="image 3/png" href="logo.png" />
+    <link rel="icon" type="image/png" href="logo.png" />
 </head>
 <body>
     <div class="container">
      
         <header>
             <h1>Bienvenue sur ChronoTrail</h1>
-            <p>Une journée, 10 courses sur 10 circuits, avec 2 courses par circuit !</p>
+            <p>Une journée, 10 courses sur 5 circuits, avec 2 courses par circuit !</p>
             <section id="cta">
-                <a href="connexion.html" class="button">ajouter course ou détail course </a>
+                <a href="connexion.html" class="button">Ajouter course ou détail course</a>
             </section>
         </header>
 
         <section id="description">
-            <h2>À propos de l’événement</h2>
-            <p>ChronoTrail est une journée intense de courses avec <strong>10 courses réparties sur 5 circuits différents</strong>, avec <strong>2 courses par circuit</strong>. L'événement peut accueillir jusqu’à <strong> 500 participants</strong>.</p>
-            <p>Toutes les courses se déroulent <strong>le même jour</strong>, et chaque coureur peut participer à plusieurs courses. Grâce à un dossard équipé d’un transpondeur RFID, vous serez suivi en temps réel tout au long de l'événement.</p>
+            <h2>À propos de l'événement</h2>
+            <p>ChronoTrail est une journée intense de courses avec <strong>10 courses réparties sur 5 circuits différents</strong>, avec <strong>2 courses par circuit</strong>. L'événement peut accueillir jusqu'à <strong>500 participants</strong>.</p>
+            <p>Toutes les courses se déroulent <strong>le même jour</strong>, et chaque coureur peut participer à plusieurs courses. Grâce à un dossard équipé d'un transpondeur RFID, vous serez suivi en temps réel tout au long de l'événement.</p>
             <p>Cette édition de ChronoTrail traverse <strong>toute la région de la Normandie</strong>, offrant des parcours variés entre mer, forêt et campagne.</p>
             
             <h3>🎟️ Grande Tombola ChronoTrail</h3>
@@ -36,79 +35,20 @@
             <p>🎁 <strong>Récompenses :</strong></p>
             <ul>
                 <li>🚗 <strong>Une Fiat Multipla (1998)</strong> – Un véhicule au design révolutionnaire !</li>
-                <li>✈️ <strong>Un voyage au Bangladesh</strong> – Une aventure unique à l’autre bout du monde !</li>
+                <li>✈️ <strong>Un voyage au Bangladesh</strong> – Une aventure unique à l'autre bout du monde !</li>
             </ul>
             <p>📅 Le tirage aura lieu à <strong>02h00</strong>, juste après la dernière course. Soyez présents pour découvrir les gagnants !</p>
         </section>
-            <h2>Choisissez un Parcours de Trail</h1>
-            
-            <div id="loading-message" class="loading">Chargement des parcours...</div>
+
+        <section id="courses-list">
+            <h2>Liste des courses disponibles</h2>
+            <div id="loading-message" class="loading">Chargement des courses...</div>
             <div id="error-message" class="error" style="display: none;"></div>
             
-            <div id="parcours-container">
-                <!-- Les parcours seront chargés dynamiquement ici -->
+            <div id="courses-container">
+                <!-- Les courses seront chargées dynamiquement ici -->
             </div>
-            
-            <script>
-                // Charger tous les parcours depuis l'API
-                fetch('http://localhost:3000/courses')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Erreur HTTP: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(courses => {
-                        const container = document.getElementById('parcours-container');
-                        document.getElementById('loading-message').style.display = 'none';
-                        
-                        if (!courses || courses.length === 0) {
-                            document.getElementById('error-message').innerText = "Aucun parcours disponible.";
-                            document.getElementById('error-message').style.display = 'block';
-                            return;
-                        }
-                        
-                       // Créer une carte pour chaque parcours
-                       courses.forEach(course => {
-                        const card = document.createElement('div');
-                        card.className = 'parcours-card';
-                        card.onclick = () => redirectToTrail(course.idcourse); // Utiliser idcourse au lieu de id
-                        // 
-                        // // Afficher uniquement l'heure (sans formatage)
-                        let heureStr = '';
-                        if (course.heurecourse) { // Utiliser heurecourse au lieu de date
-                        heureStr = course.heurecourse; // Afficher directement l'heure (ou la chaîne de texte)
-                        }
-    
-    // Créer le contenu HTML de la carte dans une nouvelle box
-    card.innerHTML = `
-    <div class="parcours-content">
-        <h3>${course.nomcourse || `Parcours #${course.idcourse}`}</h3>
-        <p class="location">Départ: ${course.depart} → Arrivée: ${course.arrive}</p>
-        <p class="heure">${heureStr}</p> <!-- Affiche l'heure directement -->
-        <p class="participants">Max participants: ${course.nb_maxparticipants}</p>
-    </div>
-    `;
-    
-    container.appendChild(card);
-});
-
-                    })
-                    .catch(error => {
-                        console.error("Erreur lors du chargement des parcours:", error);
-                        document.getElementById('loading-message').style.display = 'none';
-                        document.getElementById('error-message').innerText = `Erreur: ${error.message}`;
-                        document.getElementById('error-message').style.display = 'block';
-                    });
-                
-                // Fonction pour rediriger vers la page de carte avec l'ID du parcours
-                function redirectToTrail(id) {
-                    window.location.href = `detailTrail.html?id=${id}`;
-                }
-            </script>
-        
-
-
+        </section>
 
         <section id="cta">
             <a href="formulaire.html" class="button">S'inscrire maintenant</a>
@@ -118,5 +58,123 @@
             <p>&copy; 2025 ChronoTrail. Tous droits réservés.</p>
         </footer>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registration-form');
+            const messageContainer = document.getElementById('message');
+            
+            // Gérer la soumission du formulaire
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Récupérer les données du formulaire
+                const formData = new FormData(form);
+                const coureur = {
+                    nomcoureur: formData.get('nomcoureur'),
+                    prenomcoureur: formData.get('prenomcoureur'),
+                    email: formData.get('email'),
+                    telephone: formData.get('telephone'),
+                    datenaissance: formData.get('datenaissance'),
+                    accordphoto: formData.get('accordphoto') === 'true'
+                };
+                
+                // Envoyer les données au serveur
+                fetch('/api/preinscription', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(coureur)
+                })
+                .then(response => {
+                    // Vérifier le type de contenu de la réponse
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => {
+                            if (!response.ok) {
+                                throw new Error(data.error || 'Erreur lors de l\'enregistrement');
+                            }
+                            return data;
+                        });
+                    } else {
+                        // Si la réponse n'est pas JSON, traiter comme texte et lancer une erreur
+                        return response.text().then(text => {
+                            throw new Error('Le serveur a renvoyé une réponse non-JSON. Vérifiez les logs du serveur.');
+                        });
+                    }
+                })
+                .then(data => {
+                    showMessage('Préinscription enregistrée avec succès ! Un email de confirmation vous a été envoyé.', 'success');
+                    form.reset();
+                })
+                .catch(error => {
+                    console.error('Erreur complète:', error);
+                    showMessage(`Erreur: ${error.message}`, 'error');
+                });
+            });
+            
+            // Fonction pour afficher les messages
+            function showMessage(text, type) {
+                messageContainer.textContent = text;
+                messageContainer.className = `message ${type}`;
+                messageContainer.style.display = 'block';
+                
+                // Faire défiler jusqu'au message
+                messageContainer.scrollIntoView({ behavior: 'smooth' });
+                
+                // Masquer le message après 5 secondes en cas de succès
+                if (type === 'success') {
+                    setTimeout(() => {
+                        messageContainer.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+
+    <style>
+        .courses-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .courses-table th, .courses-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .courses-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .courses-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .button.small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .error {
+            color: #d9534f;
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
 </body>
 </html>

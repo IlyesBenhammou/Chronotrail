@@ -16,32 +16,29 @@
         <section>
             <form id="registration-form">
                 <label for="nom">Nom :</label>
-                <input type="text" id="nom" name="nom" required>
-
+                <input type="text" id="nom" name="nomcoureur" required>
+                
                 <label for="prenom">Prénom :</label>
-                <input type="text" id="prenom" name="prenom" required>
-
+                <input type="text" id="prenom" name="prenomcoureur" required>
+                
                 <label for="email">Email :</label>
                 <input type="email" id="email" name="email" required>
-
+                
                 <label for="telephone">Téléphone :</label>
                 <input type="tel" id="telephone" name="telephone" required>
-
+                
                 <label for="dateNaissance">Date de naissance :</label>
-                <input type="date" id="dateNaissance" name="dateNaissance" required>
-
+                <input type="date" id="dateNaissance" name="datenaissance" required>
+                
                 <label>
-                    <input type="checkbox" id="accordPhoto" name="accordPhoto" value="true">
+                    <input type="checkbox" id="accordPhoto" name="accordphoto" value="true">
                     J'autorise l'utilisation de mon image
                 </label>
-
-                <h3>Choisissez vos courses :</h3>
-                <div id="checkbox-courses">
-                    <!-- Les courses seront générées ici dynamiquement -->
-                </div>
-
+                
                 <button type="submit">S'inscrire</button>
             </form>
+            
+            <div id="message" class="message" style="display: none;"></div>
         </section>
 
         <footer>
@@ -49,6 +46,111 @@
         </footer>
     </div>
 
-    <script src="script.js" defer></script>
+    <script>
+        // Script à inclure dans la page inscription.html
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registration-form');
+    const messageContainer = document.getElementById('message');
+    
+    // Gérer la soumission du formulaire
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Afficher un message de chargement
+        showMessage('Envoi en cours...', 'info');
+        
+        // Récupérer les données du formulaire
+        const formData = new FormData(form);
+        const coureur = {
+            nomcoureur: formData.get('nomcoureur'),
+            prenomcoureur: formData.get('prenomcoureur'),
+            email: formData.get('email'),
+            telephone: formData.get('telephone'),
+            datenaissance: formData.get('datenaissance'),
+            accordphoto: formData.get('accordphoto') === 'true'
+        };
+        
+        // Vérifier que tous les champs obligatoires sont remplis
+        for (const [key, value] of Object.entries(coureur)) {
+            if (key !== 'accordphoto' && !value) {
+                showMessage('Tous les champs doivent être remplis', 'error');
+                return;
+            }
+        }
+        
+        // Envoyer les données au serveur
+        fetch('/api/preinscription', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(coureur)
+        })
+        .then(response => {
+            // Vérifier le type de contenu avant de parser comme JSON
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf('application/json') !== -1) {
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Erreur lors de l\'enregistrement');
+                    }
+                    return data;
+                });
+            } else {
+                // Si la réponse n'est pas du JSON, traiter comme texte et lancer une erreur
+                return response.text().then(text => {
+                    console.error('Réponse non-JSON:', text);
+                    throw new Error('Le serveur a renvoyé une réponse non-JSON');
+                });
+            }
+        })
+        .then(data => {
+            showMessage('Préinscription enregistrée avec succès ! Un email de confirmation vous a été envoyé.', 'success');
+            form.reset();
+        })
+        .catch(error => {
+            console.error('Erreur complète:', error);
+            showMessage(`Erreur: ${error.message}`, 'error');
+        });
+    });
+    
+    // Fonction pour afficher les messages
+    function showMessage(text, type) {
+        messageContainer.textContent = text;
+        messageContainer.className = `message ${type}`;
+        messageContainer.style.display = 'block';
+        
+        // Faire défiler jusqu'au message
+        messageContainer.scrollIntoView({ behavior: 'smooth' });
+        
+        // Masquer le message après 5 secondes en cas de succès
+        if (type === 'success') {
+            setTimeout(() => {
+                messageContainer.style.display = 'none';
+            }, 5000);
+        }
+    }
+});
+    </script>
+    
+    <style>
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
 </body>
 </html>

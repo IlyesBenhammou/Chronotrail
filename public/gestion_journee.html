@@ -19,17 +19,19 @@
             <input type="text" id="nom_course" name="nomCourse" required>
 
             <label for="date_course">Date de la course:</label>
-            <input type="text" id="heure_course" name="dateCourse" required>
+            <input type="datetime-local" id="heure_course" name="dateCourse" required>
 
-            <label for="depart_course">Départ de la course:</label>
-            <input type="text" id="depart_course" name="departCourse" required>
+            <label for="depart_course">Heure de départ:</label>
+            <input type="time" id="depart_course" name="departCourse" required>
             
-            <label for="arrive_course">Arrivée de la course:</label>
-            <input type="text" id="arrive_course" name="arriveCourse" required>
+            <label for="arrive_course">Heure d'arrivée estimée:</label>
+            <input type="time" id="arrive_course" name="arriveCourse" required>
+            
+            <label for="nb_max_participants">Nombre maximum de participants:</label>
+            <input type="number" id="nb_max_participants" name="nbMaxParticipants" value="50" min="1" required>
         </form>
     </div>
     
-
     <div id="map"></div>
 
     <div class="action-buttons">
@@ -79,88 +81,87 @@
             let allCoordinates = [];
             geoJson.features.forEach(feature => {
                 if (feature.geometry) {
-            if (feature.geometry.type === 'Point') {
-                // Pour un point, on inverse les coordonnées (latitude, longitude)
-                allCoordinates.push([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
-            } 
-            else if (feature.geometry.type === 'LineString') {
-                // Pour une ligne, on inverse chaque coordonnée (latitude, longitude)
-                feature.geometry.coordinates.forEach(coord => {
-                    allCoordinates.push([coord[1], coord[0]]);
-                });
-            }
+                    if (feature.geometry.type === 'Point') {
+                        // Pour un point, on inverse les coordonnées (latitude, longitude)
+                        allCoordinates.push([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+                    } 
+                    else if (feature.geometry.type === 'LineString') {
+                        // Pour une ligne, on inverse chaque coordonnée (latitude, longitude)
+                        feature.geometry.coordinates.forEach(coord => {
+                            allCoordinates.push([coord[1], coord[0]]);
+                        });
+                    }
+                }
+            });
+            
+            return allCoordinates;
         }
-    });
-    
-    return allCoordinates;
-}
             
         // Fonction pour envoyer la course au serveur
-document.getElementById('saveButton').addEventListener('click', function() {
-    // Récupération des données du formulaire
-    var nom = document.getElementById('nom_course').value;
-    var date = document.getElementById('heure_course').value;
-    var depart = document.getElementById('depart_course').value;
-    var arrive = document.getElementById('arrive_course').value;
-    
-    // Validation des champs requis
-    if (!nom || !date || !depart || !arrive) {
-        alert('Veuillez remplir tous les champs obligatoires');
-        return;
-    }
-    
-    // Récupération des coordonnées tracées sur la carte
-    var geoJson = drawnItems.toGeoJSON();
-    var coordinates = extractCoordinates(geoJson);
-    
-    // Vérification des coordonnées
-    if (coordinates.length === 0) {
-        alert('Veuillez tracer un parcours sur la carte');
-        return;
-    }
-    
-    console.log("Données à envoyer:", {
-        nomcourse: nom,
-        heurecourse: date,
-        depart: depart,
-        arrive: arrive,
-        coordonee: coordinates,
-        nb_maxparticipants: 50,  // Valeur par défaut de la table
-        tempsfinal: null         // Sera rempli plus tard
-    });
-    
-    fetch('/save-course', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        nomcourse: nom,
-        heurecourse: date,
-        depart: depart,
-        arrive: arrive,
-        coordonee: coordinates, // Envoyez directement l'objet, sans double JSON.stringify
-        nb_maxparticipants: 50,
-        tempsfinal: null
-    })
-})
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erreur serveur: ' + response.status);
-        }
-        return response.json();
-    })
-    .then(data => {
-        alert('Course sauvegardée avec succès!');
-        console.log('Réponse du serveur:', data);
-        // Optionnel: redirection vers la page des parcours
-        // window.location.href = 'choixParcours.html';
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de l\'enregistrement de la course: ' + error.message);
-    });
-});
+        document.getElementById('saveButton').addEventListener('click', function() {
+            // Récupération des données du formulaire
+            var nom = document.getElementById('nom_course').value;
+            var date = document.getElementById('heure_course').value;
+            var depart = document.getElementById('depart_course').value;
+            var arrive = document.getElementById('arrive_course').value;
+            var nbMaxParticipants = document.getElementById('nb_max_participants').value || 50;
+            
+            // Validation des champs requis
+            if (!nom || !date || !depart || !arrive) {
+                alert('Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+            
+            // Récupération des coordonnées tracées sur la carte
+            var geoJson = drawnItems.toGeoJSON();
+            var coordinates = extractCoordinates(geoJson);
+            
+            // Vérification des coordonnées
+            if (coordinates.length === 0) {
+                alert('Veuillez tracer un parcours sur la carte');
+                return;
+            }
+            
+            console.log("Données à envoyer:", {
+                nomcourse: nom,
+                heurecourse: date,
+                depart: depart,
+                arrive: arrive,
+                coordonee: coordinates,
+                nb_maxparticipants: parseInt(nbMaxParticipants)
+            });
+            
+            fetch('/save-course', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nomcourse: nom,
+                    heurecourse: date,
+                    depart: depart,
+                    arrive: arrive,
+                    coordonee: coordinates,
+                    nb_maxparticipants: parseInt(nbMaxParticipants)
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur serveur: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Course sauvegardée avec succès!');
+                console.log('Réponse du serveur:', data);
+                // Optionnel: redirection vers la page des parcours
+                window.location.href = 'choixParcours.html';
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement de la course: ' + error.message);
+            });
+        });
     </script>
 </body>
 </html>

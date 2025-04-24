@@ -33,6 +33,11 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// Route pour la page d'inscription
+app.get("/inscription", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "inscription.html"));
+});
+
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
@@ -62,32 +67,182 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// Dans votre route Node.js
+// Nouvel endpoint pour traiter les préinscriptions des coureurs
+app.post('/api/preinscription', async (req, res) => {
+    try {
+        // Log pour débogage
+        console.log('Données reçues:', req.body);
+        
+        // Récupérer les données du formulaire
+        const {
+            nomcoureur,
+            prenomcoureur,
+            email,
+            telephone,
+            datenaissance,
+            accordphoto = false
+        } = req.body;
+        
+        // Vérifier si les données requises sont présentes
+        if (!nomcoureur || !prenomcoureur || !email || !telephone || !datenaissance) {
+            return res.status(400).json({
+                error: "Tous les champs obligatoires doivent être remplis"
+            });
+        }
+        
+        // Vérifier si l'email existe déjà
+        const checkEmail = await pool.query(
+            'SELECT * FROM preinscriptioncoureur WHERE email = $1',
+            [email]
+        );
+        
+        if (checkEmail.rows.length > 0) {
+            return res.status(400).json({
+                error: "Un coureur avec cet email est déjà inscrit"
+            });
+        }
+        
+        // Insérer le nouveau coureur dans la base de données
+        const query = `
+            INSERT INTO preinscriptioncoureur 
+            (nomcoureur, prenomcoureur, datenaissance, email, telephone, accordphoto, present)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *
+        `;
+        
+        const values = [
+            nomcoureur,
+            prenomcoureur,
+            datenaissance,
+            email,
+            telephone,
+            accordphoto,
+            false // present = false par défaut
+        ];
+        
+        const result = await pool.query(query, values);
+        console.log("Préinscription enregistrée avec succès:", result.rows[0]);
+        
+        // Configuration du transporteur pour l'envoi d'emails
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'thomasbilhaut8@gmail.com',
+                pass: 'uive noxt vzov lgme' // Mot de passe d'application
+            }
+        });
+        
+        // Créer un jeton unique pour confirmation (optionnel)
+        const confirmToken = crypto.randomBytes(20).toString('hex');
+        
+        // Options de l'email
+        const mailOptions = {
+            from: 'thomasbilhaut8@gmail.com',
+            to: email,
+            subject: 'Confirmation de préinscription - ChronoTrail',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                    <h1 style="color: #4a90e2;">Confirmation de préinscription</h1>
+                    <p>Bonjour <strong>${prenomcoureur} ${nomcoureur}</strong>,</p>
+                    <p>Nous avons bien reçu votre préinscription aux courses ChronoTrail.</p>
+                    <p>Voici un récapitulatif de vos informations :</p>
+                    <ul>
+                        <li><strong>Nom :</strong> ${nomcoureur}</li>
+                        <li><strong>Prénom :</strong> ${prenomcoureur}</li>
+                        <li><strong>Date de naissance :</strong> ${datenaissance}</li>
+                        <li><strong>Email :</strong> ${email}</li>
+                        <li><strong>Téléphone :</strong> ${telephone}</li>
+                    </ul>
+                    <p>Vous pouvez vous connecter à notre plateforme en utilisant votre <strong>prénom</strong> comme nom d'utilisateur et votre <strong>nom</strong> comme mot de passe.</p>
+                    <p>Cordialement,<br>L'équipe ChronoTrail</p>
+                </div>
+            `
+        };
+        
+        // Envoyer l'email
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Erreur lors de l\'envoi de l\'email:', error);
+                // On continue malgré l'erreur d'envoi d'email
+            } else {
+                console.log('Email envoyé avec succès:', info.response);
+            }
+        });
+        
+        // Répondre au client avec un succès
+        res.status(201).json({
+            message: "Préinscription enregistrée avec succès",
+            coureur: result.rows[0]
+        });
+        
+    } catch (err) {
+        console.error('Erreur lors de l\'enregistrement de la préinscription:', err);
+        res.status(500).json({
+            error: "Erreur serveur lors de l'enregistrement",
+            details: err.message
+        });
+    }
+});
+
+// Modifié pour utiliser la table "course" au lieu de "courses"
 app.post('/save-course', async (req, res) => {
     const {
         nomcourse,
         heurecourse,
         depart,
         arrive,
-        coordonee, // Les coordonnées arrivent déjà comme un objet JavaScript
+        coordonee,
         nb_maxparticipants = 50,
         tempsfinal = null
     } = req.body;
     
     try {
-        // Validation des données...
+        // Calculer la distance approximative en km
+        let distance = 0;
+        if (coordonee && coordonee.length > 1) {
+            for (let i = 1; i < coordonee.length; i++) {
+                // Calcul approximatif de la distance entre deux points en km
+                const lat1 = coordonee[i-1][0];
+                const lon1 = coordonee[i-1][1];
+                const lat2 = coordonee[i][0];
+                const lon2 = coordonee[i][1];
+                
+                // Formule haversine pour calculer la distance
+                const R = 6371; // Rayon de la Terre en km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const d = R * c;
+                
+                distance += d;
+            }
+            // Arrondir à deux décimales
+            distance = Math.round(distance * 100) / 100;
+        }
         
-        // Pas besoin de convertir coordonee, il faut juste le passer tel quel
+        // Adaptation à la structure de la table course
         const query = `
-            INSERT INTO courses (nomcourse, heurecourse, depart, arrive, coordonee, nb_maxparticipants, tempsfinal)
-            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
+            INSERT INTO course (nomcourse, datecourse, distance, heure_depart, heure_arrivee, nb_max_participants, coordonnees)
+            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
             RETURNING *
         `;
         
-        // Convertir l'objet coordonnées en chaîne JSON pour PostgreSQL
+        // Convertir les coordonnées en format JSON pour PostgreSQL
         const jsonCoordinates = coordonee ? JSON.stringify(coordonee) : null;
         
-        const values = [nomcourse, heurecourse, depart, arrive, jsonCoordinates, nb_maxparticipants, tempsfinal];
+        const values = [
+            nomcourse,               // nomcourse 
+            heurecourse,             // datecourse
+            distance,                // distance calculée
+            depart,                  // heure_depart
+            arrive,                  // heure_arrivee
+            nb_maxparticipants,      // nb_max_participants
+            jsonCoordinates          // coordonnees
+        ];
+        
         const result = await pool.query(query, values);
         
         console.log("Course sauvegardée avec succès:", result.rows[0]);
@@ -104,11 +259,12 @@ app.post('/save-course', async (req, res) => {
     }
 });
 
+// Modifié pour utiliser la table "course" au lieu de "courses"
 app.get("/course/:id", async (req, res) => {
     const id = req.params.id;
     try {
         const result = await pool.query(
-            "SELECT * FROM courses WHERE idcourse = $1",
+            "SELECT * FROM course WHERE idcourse = $1",
             [id]
         );
 
@@ -123,10 +279,10 @@ app.get("/course/:id", async (req, res) => {
     }
 });
 
-
+// Modifié pour utiliser la table "course" au lieu de "courses"
 app.get('/courses', async (req, res) => {
     try {
-        const query = 'SELECT * FROM courses ORDER BY heurecourse DESC';
+        const query = 'SELECT * FROM course ORDER BY datecourse DESC';
         const result = await pool.query(query);
         
         res.json(result.rows);
@@ -139,102 +295,23 @@ app.get('/courses', async (req, res) => {
     }
 });
 
-// Assurez-vous que cette route est bien définie dans votre fichier serveur
-app.get('/coureurs', async (req, res) => {
-    const { nom } = req.query;
-    
-    if (!nom) {
-        return res.status(400).send('Nom de famille requis.');
-    }
-    
+// Route pour récupérer la liste des coureurs préinscrits
+app.get('/api/coureurs', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM preinscriptioncoureur WHERE nomcoureur ILIKE $1',
-            [`%${nom}%`]
-        );
+        const query = 'SELECT * FROM preinscriptioncoureur ORDER BY nomcoureur, prenomcoureur';
+        const result = await pool.query(query);
         
         res.json(result.rows);
-    } catch (error) {
-        console.error('Erreur de la base de données:', error);
-        res.status(500).send('Erreur interne du serveur.');
+    } catch (err) {
+        console.error("Erreur lors de la récupération des coureurs:", err);
+        res.status(500).json({ 
+            error: 'Erreur lors de la récupération des coureurs', 
+            details: err.message 
+        });
     }
 });
-
-// Route for updating accordphoto field
-app.put('/coureurs/:id/accordphoto', async (req, res) => {
-    const id = req.params.id;
-    const { accordphoto } = req.body;
-    
-    try {
-        const result = await pool.query(
-            'UPDATE preinscriptioncoureur SET accordphoto = $1 WHERE idcoureur = $2 RETURNING *',
-            [accordphoto, id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Coureur non trouvé' });
-        }
-        
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Erreur lors de la mise à jour de l\'accord photo:', error);
-        res.status(500).json({ error: 'Erreur interne du serveur' });
-    }
-});
-
-// Route for updating presencevalide field
-app.put('/coureurs/:id/presencevalide', async (req, res) => {
-    const id = req.params.id;
-    const { presencevalide } = req.body;
-    
-    try {
-        const result = await pool.query(
-            'UPDATE preinscriptioncoureur SET presencevalide = $1 WHERE idcoureur = $2 RETURNING *',
-            [presencevalide, id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Coureur non trouvé' });
-        }
-        
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Erreur lors de la mise à jour de la présence:', error);
-        res.status(500).json({ error: 'Erreur interne du serveur' });
-    }
-});
-
-// Existing route for retrieving coureur details
-app.get('/coureurs/:id', async (req, res) => {
-    const id = req.params.id;
-    
-    try {
-        const result = await pool.query(
-            'SELECT * FROM preinscriptioncoureur WHERE idcoureur = $1',
-            [id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Coureur non trouvé' });
-        }
-        
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Erreur lors de la récupération des détails du coureur:', error);
-        res.status(500).json({ error: 'Erreur interne du serveur' });
-    }
-});
-
-  
-
-    
-
-
-
 
 // Démarrer le serveur
 app.listen(PORT, () => {
     console.log(`Serveur en ligne : http://localhost:${PORT}`);
 });
-
-
