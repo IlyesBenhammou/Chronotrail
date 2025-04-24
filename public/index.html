@@ -61,75 +61,89 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('registration-form');
-            const messageContainer = document.getElementById('message');
-            
-            // Gérer la soumission du formulaire
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Récupérer les données du formulaire
-                const formData = new FormData(form);
-                const coureur = {
-                    nomcoureur: formData.get('nomcoureur'),
-                    prenomcoureur: formData.get('prenomcoureur'),
-                    email: formData.get('email'),
-                    telephone: formData.get('telephone'),
-                    datenaissance: formData.get('datenaissance'),
-                    accordphoto: formData.get('accordphoto') === 'true'
-                };
-                
-                // Envoyer les données au serveur
-                fetch('/api/preinscription', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(coureur)
-                })
-                .then(response => {
-                    // Vérifier le type de contenu de la réponse
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json().then(data => {
-                            if (!response.ok) {
-                                throw new Error(data.error || 'Erreur lors de l\'enregistrement');
-                            }
-                            return data;
-                        });
-                    } else {
-                        // Si la réponse n'est pas JSON, traiter comme texte et lancer une erreur
-                        return response.text().then(text => {
-                            throw new Error('Le serveur a renvoyé une réponse non-JSON. Vérifiez les logs du serveur.');
-                        });
-                    }
-                })
-                .then(data => {
-                    showMessage('Préinscription enregistrée avec succès ! Un email de confirmation vous a été envoyé.', 'success');
-                    form.reset();
-                })
-                .catch(error => {
-                    console.error('Erreur complète:', error);
-                    showMessage(`Erreur: ${error.message}`, 'error');
-                });
-            });
-            
-            // Fonction pour afficher les messages
-            function showMessage(text, type) {
-                messageContainer.textContent = text;
-                messageContainer.className = `message ${type}`;
-                messageContainer.style.display = 'block';
-                
-                // Faire défiler jusqu'au message
-                messageContainer.scrollIntoView({ behavior: 'smooth' });
-                
-                // Masquer le message après 5 secondes en cas de succès
-                if (type === 'success') {
-                    setTimeout(() => {
-                        messageContainer.style.display = 'none';
-                    }, 5000);
+            // Fonction pour formater une date
+            function formatDate(dateString) {
+                if (!dateString) return 'Non spécifiée';
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    return dateString;
                 }
             }
+
+            // Charger toutes les courses
+            fetch('/courses')
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(courses => {
+    document.getElementById('loading-message').style.display = 'none';
+    const container = document.getElementById('courses-container');
+    
+    if (courses.length === 0) {
+        container.innerHTML = '<p>Aucune course disponible pour le moment.</p>';
+        return;
+    }
+
+    // TRIER PAR HEURE DE DÉPART
+    courses.sort((a, b) => {
+        const hA = new Date(`1970-01-01T${a.heure_depart}`);
+        const hB = new Date(`1970-01-01T${b.heure_depart}`);
+        return hA - hB;
+    });
+
+    const table = document.createElement('table');
+    table.className = 'courses-table';
+    
+    // En-tête du tableau
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Nom</th>
+            <th>Date</th>
+            <th>Distance</th>
+            <th>Départ</th>
+            <th>Arrivée</th>
+            <th>Places max</th>
+            <th>Actions</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    // Corps du tableau
+    const tbody = document.createElement('tbody');
+    courses.forEach(course => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${course.nomcourse || '-'}</td>
+            <td>${formatDate(course.datecourse)}</td>
+            <td>${course.distance ? course.distance + ' km' : '-'}</td>
+            <td>${course.heure_depart || '-'}</td>
+            <td>${course.heure_arrivee || '-'}</td>
+            <td>${course.nb_max_participants || '-'}</td>
+            <td>
+                <a href="detailTrail.html?id=${course.idcourse}" class="button small">Détails</a>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+})
+
+                .catch(err => {
+                    document.getElementById('loading-message').style.display = 'none';
+                    document.getElementById('error-message').innerText = `Erreur: ${err.message}`;
+                    document.getElementById('error-message').style.display = 'block';
+                });
         });
     </script>
 
