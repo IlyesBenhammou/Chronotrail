@@ -227,3 +227,9 @@ function getPresenceText(status) {
         default: return 'Non vérifié';
     }
 }
+
+
+
+
+
+// <!-- IHM AVEC interaction la base de données  -->
