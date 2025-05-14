@@ -3,21 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="styleGestionJourneCoureur.css">
     <title>Choix du Parcours de Trail</title>
+    <link rel="stylesheet" href="styleGestionJourneCoureur.css">
+    <style>
+        .delete-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .delete-btn:hover {
+            background-color: #e60000;
+        }
+
+        .confirm-dialog {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 400px;
+            width: 80%;
+            text-align: center;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .dialog-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .confirm-btn {
+            background-color: #ff4d4d;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #ccc;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
     <h1>Choisissez un Parcours de Trail</h1>
-    
-    <div id="loading-message" class="loading">Chargement des parcours...</div>
-    <div id="error-message" class="error" style="display: none;"></div>
-    
-    <div id="parcours-container">
-        <!-- Les parcours seront chargés dynamiquement ici -->
+
+    <div id="loading-message">Chargement des parcours...</div>
+    <div id="error-message" style="display: none;"></div>
+
+    <div id="parcours-container"></div>
+
+    <!-- Boîte de dialogue de confirmation -->
+    <div id="confirm-dialog" class="confirm-dialog">
+        <div class="dialog-content">
+            <h3>Confirmation de suppression</h3>
+            <p>Êtes-vous sûr de vouloir supprimer cette course ?</p>
+            <p>Cette action est irréversible.</p>
+            <div class="dialog-buttons">
+                <button id="cancel-delete" class="dialog-btn cancel-btn">Annuler</button>
+                <button id="confirm-delete" class="dialog-btn confirm-btn">Confirmer</button>
+            </div>
+        </div>
     </div>
-    
+
     <script>
-        // Charger tous les parcours depuis l'API
+        let courseToDeleteId = null;
+
+        function showDeleteConfirmation(id, event) {
+            event.stopPropagation();
+            courseToDeleteId = id;
+            document.getElementById('confirm-dialog').style.display = 'flex';
+        }
+
+        function closeDialog() {
+            document.getElementById('confirm-dialog').style.display = 'none';
+        }
+
+        async function deleteCourse(id) {
+            try {
+                const url = `/api/course/${id}`;
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log("Course supprimée:", result);
+
+                // Supprimer la carte de la course de l'interface
+                const cardToRemove = document.querySelector(`[data-course-id="${id}"]`);
+                if (cardToRemove) {
+                    cardToRemove.remove();
+                }
+
+                // Afficher un message s’il ne reste plus de cartes
+                const container = document.getElementById('parcours-container');
+                if (container.children.length === 0) {
+                    const errorMessage = document.getElementById('error-message');
+                    errorMessage.innerText = "Aucun parcours disponible.";
+                    errorMessage.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error("Erreur lors de la suppression:", error);
+                alert(`Erreur lors de la suppression: ${error.message}`);
+            }
+        }
+
+        function redirectToTrail(id) {
+            window.location.href = `detailTrail.html?id=${id}`;
+        }
+
+        document.getElementById('cancel-delete').addEventListener('click', closeDialog);
+        document.getElementById('confirm-delete').addEventListener('click', () => {
+            if (courseToDeleteId) {
+                deleteCourse(courseToDeleteId);
+                closeDialog();
+            }
+        });
+
+        // Charger les parcours
         fetch('/courses')
             .then(response => {
                 if (!response.ok) {
@@ -26,65 +156,44 @@
                 return response.json();
             })
             .then(courses => {
-                const container = document.getElementById('parcours-container');
                 document.getElementById('loading-message').style.display = 'none';
-                
+                const container = document.getElementById('parcours-container');
+
                 if (!courses || courses.length === 0) {
                     document.getElementById('error-message').innerText = "Aucun parcours disponible.";
                     document.getElementById('error-message').style.display = 'block';
                     return;
                 }
-                
-                // Créer une carte pour chaque parcours
+
                 courses.forEach(course => {
                     const card = document.createElement('div');
                     card.className = 'parcours-card';
+                    card.setAttribute('data-course-id', course.idcourse);
                     card.onclick = () => redirectToTrail(course.idcourse);
-                    
-                    // Formatage de la date
-                    let dateStr = '';
-                    if (course.datecourse) {
-                        try {
-                            // Essayer de formater la date
-                            const date = new Date(course.datecourse);
-                            dateStr = date.toLocaleDateString('fr-FR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                        } catch (e) {
-                            // Si le formatage échoue, afficher la date brute
-                            dateStr = course.datecourse;
-                        }
-                    }
-                    
-                    // Créer le contenu HTML de la carte
+
+                    const dateStr = course.datecourse ? new Date(course.datecourse).toLocaleString('fr-FR') : 'Date non spécifiée';
+
                     card.innerHTML = `
-                    <div class="parcours-content">
-                        <h3>${course.nomcourse || `Parcours #${course.idcourse}`}</h3>
-                        <p class="location">Départ: ${course.heure_depart || 'Non spécifié'} → Arrivée: ${course.heure_arrivee || 'Non spécifié'}</p>
-                        <p class="date">${dateStr}</p>
-                        <p class="distance">${course.distance ? `Distance: ${course.distance} km` : ''}</p>
-                        <p class="participants">Max participants: ${course.nb_max_participants || 'Non spécifié'}</p>
-                    </div>
+                        <div class="parcours-content">
+                            <h3>${course.nomcourse || `Parcours #${course.idcourse}`}</h3>
+                            <p class="location">Départ: ${course.heure_depart || 'Non spécifié'} → Arrivée: ${course.heure_arrivee || 'Non spécifié'}</p>
+                            <p class="date">${dateStr}</p>
+                            <p class="distance">${course.distance ? `Distance: ${course.distance} km` : ''}</p>
+                            <p class="participants">Max participants: ${course.nb_max_participants || 'Non spécifié'}</p>
+                            <button class="delete-btn" onclick="showDeleteConfirmation(${course.idcourse}, event)">Supprimer</button>
+                        </div>
                     `;
-                    
+
                     container.appendChild(card);
                 });
             })
             .catch(error => {
                 console.error("Erreur lors du chargement des parcours:", error);
                 document.getElementById('loading-message').style.display = 'none';
-                document.getElementById('error-message').innerText = `Erreur: ${error.message}`;
-                document.getElementById('error-message').style.display = 'block';
+                const err = document.getElementById('error-message');
+                err.innerText = `Erreur: ${error.message}`;
+                err.style.display = 'block';
             });
-        
-        // Fonction pour rediriger vers la page de carte avec l'ID du parcours
-        function redirectToTrail(id) {
-            window.location.href = `detailTrail.html?id=${id}`;
-        }
     </script>
 </body>
 </html>

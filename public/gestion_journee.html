@@ -36,7 +36,7 @@
 
     <div class="action-buttons">
         <button id="saveButton">Sauvegarder la course</button>
-        <button onclick="window.location.href='choixParcours.html'">Accéder à tous les parcours</button>
+        <button onclick="window.location.href='index.html'">Accéder à tous les parcours</button>
     </div>
 
     <script>
@@ -155,7 +155,7 @@
                 alert('Course sauvegardée avec succès!');
                 console.log('Réponse du serveur:', data);
                 // Optionnel: redirection vers la page des parcours
-                window.location.href = 'choixParcours.html';
+                window.location.href = 'index.html';
             })
             .catch(error => {
                 console.error('Erreur:', error);
