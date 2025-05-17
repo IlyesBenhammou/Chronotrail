@@ -7,7 +7,7 @@ const port = 4000;
 
 app.use(bodyParser.json());
 
-// Connexion à PostgreSQL
+// Connexion à la base PostgreSQL
 const pool = new Pool({
   user: "postgres",
   host: "localhost",
@@ -16,68 +16,48 @@ const pool = new Pool({
   port: 5432,
 });
 
-// Route pour associer un UID à un dossard (si ce n’est pas déjà fait)
-app.post("/api/dossards", async (req, res) => {
-  const { uid } = req.body;
-
-  try {
-    // Vérifie si ce RFID est déjà associé
-    const check = await pool.query("SELECT * FROM dossards WHERE uid = $1", [uid]);
-
-    if (check.rows.length > 0) {
-      return res.status(200).json({ message: "Carte déjà enregistrée." });
-    }
-
-    // Récupère un dossard libre
-    const result = await pool.query("SELECT * FROM dossards WHERE disponible = true LIMIT 1");
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: "Aucun dossard disponible." });
-    }
-
-    const dossard = result.rows[0];
-
-    // Associe l'UID et rend le dossard indisponible
-    await pool.query("UPDATE dossards SET uid = $1, disponible = false WHERE iddossard = $2", [uid, dossard.iddossard]);
-
-    res.status(200).json({ message: `UID associé au dossard ${dossard.numero}`, dossard: dossard.numero });
-  } catch (error) {
-    console.error("Erreur enregistrement dossard:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
-
-// Route pour enregistrer heure d’arrivée (et calcul du temps)
+// Enregistrement du temps de départ ou d'arrivée
 app.post("/api/temps-course", async (req, res) => {
   const { uid } = req.body;
 
   try {
     const result = await pool.query("SELECT * FROM dossards WHERE uid = $1", [uid]);
+
     if (result.rows.length === 0) {
       return res.status(400).json({ error: "⚠️ Aucun dossard avec ce RFID" });
     }
 
     const dossard = result.rows[0];
 
-    // Heure de départ déjà enregistrée ?
+    // Si pas encore de départ, on enregistre le départ
     if (!dossard.heure_depart) {
-      const now = new Date();
-      await pool.query("UPDATE dossards SET heure_depart = $1 WHERE uid = $2", [now, uid]);
-      return res.status(200).json({ message: `Départ enregistré pour le dossard ${dossard.numero}` });
+      await pool.query("UPDATE dossards SET heure_depart = CURRENT_TIMESTAMP WHERE iddossard = $1", [dossard.iddossard]);
+      return res.status(200).json({
+        message: "Départ enregistré",
+        dossard: dossard.numero,
+        uid: uid,
+      });
     }
 
-    // Sinon, on enregistre l’heure d’arrivée
-    const now = new Date();
-    const temps = (now - new Date(dossard.heure_depart)) / 1000; // en secondes
+    // Si déjà un départ mais pas encore d’arrivée, on enregistre l’arrivée
+    if (!dossard.heure_arrivee) {
+      const arrivee = new Date();
+      await pool.query("UPDATE dossards SET heure_arrivee = $1 WHERE iddossard = $2", [arrivee, dossard.iddossard]);
 
-    await pool.query("UPDATE dossards SET heure_arrivee = $1 WHERE uid = $2", [now, uid]);
+      const depart = new Date(dossard.heure_depart);
+      const temps = ((arrivee - depart) / 1000).toFixed(2); // secondes
 
-    res.status(200).json({
-      message: "Temps enregistré",
-      temps: temps.toFixed(2),
-      dossard: dossard.numero,
-      heure_depart: dossard.heure_depart,
-      heure_arrivee: now,
-    });
+      return res.status(200).json({
+        message: "Arrivée enregistrée",
+        dossard: dossard.numero,
+        temps: temps,
+        heure_depart: depart,
+        heure_arrivee: arrivee
+      });
+    }
+
+    // Si tout est déjà enregistré
+    return res.status(200).json({ message: "Temps déjà enregistré pour ce dossard." });
 
   } catch (error) {
     console.error("Erreur enregistrement du temps:", error);
