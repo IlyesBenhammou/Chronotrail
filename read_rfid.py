@@ -1,10 +1,10 @@
-import requests
+import RPi.GPIO as GPIO
 import time
+import requests
 from mfrc522 import SimpleMFRC522
 
-# ⚠️ Remplace par l’IP de ton Raspberry Pi 2
-URL_DOSSARD = "http://172.30.232.10:4000/api/dossards"
-URL_TEMPS = "http://172.30.232.10:4000/api/temps-course"
+# Adresse IP du Raspberry Pi 2 (backend)
+SERVER_URL = "http://172.30.232.10:4000/api/temps-course"
 
 reader = SimpleMFRC522()
 
@@ -13,25 +13,29 @@ print("📢 Passez votre carte RFID...")
 try:
     while True:
         uid, _ = reader.read_no_block()
+        
         if uid:
             uid_hex = format(uid, 'X')
             print(f"🎫 Carte détectée ! UID : {uid_hex}")
 
-            # Envoie UID pour lier au dossard
             try:
-                response_dossard = requests.post(URL_DOSSARD, json={"uid": uid_hex})
-                print(f"ℹ️ Réponse dossard : {response_dossard.status_code} - {response_dossard.json()}")
-            except Exception as e:
-                print(f"❌ Erreur connexion dossard : {e}")
+                response = requests.post(SERVER_URL, json={"uid": uid_hex})
+                data = response.json()
 
-            # Envoie UID pour enregistrer temps
-            try:
-                response_temps = requests.post(URL_TEMPS, json={"uid": uid_hex})
-                print(f"⏱️ Réponse temps : {response_temps.status_code} - {response_temps.json()}")
-            except Exception as e:
-                print(f"❌ Erreur connexion temps : {e}")
-
-        time.sleep(2)
+                if response.status_code == 200:
+                    if "temps" in data:
+                        print(f"⏱️ Temps final : {data['temps']} sec (Dossard {data['dossard']})")
+                    elif "message" in data:
+                        print(f"✅ {data['message']} (Dossard {data.get('dossard', '?')})")
+                else:
+                    print(f"⚠️ Erreur : {response.status_code} - {data}")
+                    
+            except requests.exceptions.RequestException as e:
+                print(f"❌ Erreur connexion serveur : {e}")
+        
+        time.sleep(1)
 
 except KeyboardInterrupt:
-    print("🛑 Arrêt du programme.")
+    print("\n🛑 Arrêt du programme.")
+finally:
+    GPIO.cleanup()
