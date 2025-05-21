@@ -1,93 +1,135 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChronoTrail - Une journée, 10 courses !</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image 3/png" href="logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChronoTrail - Une journée, 10 courses !</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/png" href="logo.png" />
 </head>
 <body>
-    <div class="container">
-     
-        <header>
-            <h1>Bienvenue sur ChronoTrail</h1>
-            <p>Une journée, 10 courses sur 10 circuits, avec 2 courses par circuit !</p>
-        </header>
+  <div class="container">
 
-        <section id="description">
-            <h2>À propos de l’événement</h2>
-            <p>ChronoTrail est une journée intense de courses avec <strong>10 courses réparties sur 5 circuits différents</strong>, avec <strong>2 courses par circuit</strong>. L'événement peut accueillir jusqu’à <strong> 500 participants</strong>.</p>
-            <p>Toutes les courses se déroulent <strong>le même jour</strong>, et chaque coureur peut participer à plusieurs courses. Grâce à un dossard équipé d’un transpondeur RFID, vous serez suivi en temps réel tout au long de l'événement.</p>
-            <p>Cette édition de ChronoTrail traverse <strong>toute la région de la Normandie</strong>, offrant des parcours variés entre mer, forêt et campagne.</p>
+    <header>
+      <h1>Bienvenue sur ChronoTrail</h1>
+      <p>Une journée, 10 courses sur 10 circuits, avec 2 courses par circuit !</p>
+    </header>
+
+    <section id="description">
+      <h2>À propos de l’événement</h2>
+      <p>
+        ChronoTrail est une journée intense de courses avec
+        <strong>10 courses réparties sur 5 circuits différents</strong>, avec
+        <strong>2 courses par circuit</strong>. L'événement peut accueillir jusqu’à
+        <strong>500 participants</strong>.
+      </p>
+      <p>
+        Toutes les courses se déroulent <strong>le même jour</strong>, et chaque coureur peut participer à plusieurs courses. Grâce à un
+        dossard équipé d’un transpondeur RFID, vous serez suivi en temps réel tout au long de l'événement.
+      </p>
+      <p>
+        Cette édition de ChronoTrail traverse <strong>toute la région de la Normandie</strong>, offrant des parcours variés entre mer,
+        forêt et campagne.
+      </p>
+
+      <h3>🎟️ Grande Tombola ChronoTrail</h3>
+      <p>
+        Pour récompenser tous les finishers, une <strong>grande tombola</strong> sera organisée à la fin de l'événement !
+      </p>
+      <ul>
+        <li>🏁 Chaque coureur qui termine une course reçoit un ticket de tombola.</li>
+        <li>🎫 Plus vous terminez de courses, plus vous avez de tickets et donc de chances de gagner !</li>
+        <li>🎉 Un tirage au sort sera effectué en fin de journée pour désigner le grand gagnant.</li>
+      </ul>
+      <p>🎁 Récompenses :</p>
+      <ul>
+        <li>🚗 Une Fiat Multipla (1998)</li>
+        <li>✈️ Un voyage au Bangladesh</li>
+      </ul>
+      <p>📅 Tirage au sort à 02h00, juste après la dernière course.</p>
+    </section>
+
+    <section id="courses">
+      <h2>Programme des courses</h2>
+      <p>Chaque circuit accueille <strong>2 courses</strong>, offrant ainsi différentes distances et niveaux de difficulté.</p>
+
+      <div id="loading-message">Chargement des courses...</div>
+      <div id="error-message" style="display: none; color: red;"></div>
+
+      <ul class="courses-list" id="course-list"></ul>
+
+      <div id="course-info" style="display:none;">
+        <h3 id="trail-title">Course sélectionnée</h3>
+        <div id="course-details" class="course-details"></div>
+      </div>
+    </section>
+
+    <section id="cta">
+      <a href="IHM formulaire.html" class="button" style="display: inline-block; padding: 10px 20px; background: #28a745; color: white; text-decoration: none; border-radius: 5px;">S'inscrire maintenant</a>
+    </section>
+
+    <footer>
+      <p>&copy; 2025 ChronoTrail. Tous droits réservés.</p>
+    </footer>
+  </div>
+
+  <script>
+    // Charger tous les parcours depuis l'API
+    fetch('http://localhost:3000/courses')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(courses => {
+            const container = document.getElementById('parcours-container');
+            document.getElementById('loading-message').style.display = 'none';
             
-            <h3>🎟️ Grande Tombola ChronoTrail</h3>
-            <p>Pour récompenser tous les finishers, une <strong>grande tombola</strong> sera organisée à la fin de l'événement !</p>
-            <p><strong>Comment participer ?</strong></p>
-            <ul>
-                <li>🏁 <strong>Chaque coureur qui termine une course</strong> reçoit un ticket de tombola.</li>
-                <li>🎫 <strong>Plus vous terminez de courses, plus vous avez de tickets</strong> et donc de chances de gagner !</li>
-                <li>🎉 Un tirage au sort sera effectué en fin de journée pour désigner le grand gagnant.</li>
-            </ul>
-            <p>🎁 <strong>Récompenses :</strong></p>
-            <ul>
-                <li>🚗 <strong>Une Fiat Multipla (1998)</strong> – Un véhicule au design révolutionnaire !</li>
-                <li>✈️ <strong>Un voyage au Bangladesh</strong> – Une aventure unique à l’autre bout du monde !</li>
-            </ul>
-            <p>📅 Le tirage aura lieu à <strong>02h00</strong>, juste après la dernière course. Soyez présents pour découvrir les gagnants !</p>
-        </section>
-        
+            if (!courses || courses.length === 0) {
+                document.getElementById('error-message').innerText = "Aucun parcours disponible.";
+                document.getElementById('error-message').style.display = 'block';
+                return;
+            }
+            
+           // Créer une carte pour chaque parcours
+           courses.forEach(course => {
+            const card = document.createElement('div');
+            card.className = 'parcours-card';
+            card.onclick = () => redirectToTrail(course.idcourse); // Utiliser idcourse au lieu de id
+            // 
+            // // Afficher uniquement l'heure (sans formatage)
+            let heureStr = '';
+            if (course.heurecourse) { // Utiliser heurecourse au lieu de date
+            heureStr = course.heurecourse; // Afficher directement l'heure (ou la chaîne de texte)
+            }
 
+// Créer le contenu HTML de la carte dans une nouvelle box
+card.innerHTML = `
+<div class="parcours-content">
+<h3>${course.nomcourse || `Parcours #${course.idcourse}`}</h3>
+<p class="location">Départ: ${course.depart} → Arrivée: ${course.arrive}</p>
+<p class="heure">${heureStr}</p> <!-- Affiche l'heure directement -->
+<p class="participants">Max participants: ${course.nb_maxparticipants}</p>
+</div>
+`;
 
-        <section id="courses">
-            <h2>Programme des courses</h2>
-            <p>Chaque circuit accueille <strong>2 courses</strong>, offrant ainsi différentes distances et niveaux de difficulté.</p>
-            <ul class="courses-list">
-                <li>
-                    <span>🏔️ Circuit des Montagnes</span>
-                    <ul>
-                        <li>Course 1 : Trail des Cimes - 10km (08:00 - 09:30)</li>
-                        <li>Course 2 : Marathon des Sommets - 42km (08:30 - 14:30)</li>
-                    </ul>
-                </li>
-                <li>
-                    <span>🌲 Circuit des Forêts</span>
-                    <ul>
-                        <li>Course 3 : Randonnée Trail - 15km (10:00 - 12:00)</li>
-                        <li>Course 4 : Ultra-Trail des Bois - 25km (13:00 - 16:00)</li>
-                    </ul>
-                </li>
-                <li>
-                    <span>🏙️ Circuit Urbain</span>
-                    <ul>
-                        <li>Course 5 : Semi-Marathon - 21km (09:00 - 11:30)</li>
-                        <li>Course 6 : Sprint Urbain - 5km (17:00 - 18:00)</li>
-                    </ul>
-                </li>
-                <li>
-                    <span>🌊 Circuit Côtier</span>
-                    <ul>
-                        <li>Course 7 : Course des Falaises - 8km (14:00 - 15:30)</li>
-                        <li>Course 8 : Défi du Littoral - 12km (15:45 - 17:15)</li>
-                    </ul>
-                </li>
-                <li>
-                    <span>🌙 Circuit Nocturne</span>
-                    <ul>
-                        <li>Course 9 : Course Nocturne - 5km (19:00 - 20:00)</li>
-                        <li>Course 10 : Marathon de Nuit - 42km (20:30 - 02:00)</li>
-                    </ul>
-                </li>
-            </ul>
-        </section>
+container.appendChild(card);
+});
 
-        <section id="cta">
-            <a href="IHM formulaire .html" class="button">S'inscrire maintenant</a>
-        </section>
+        })
+        .catch(error => {
+            console.error("Erreur lors du chargement des parcours:", error);
+            document.getElementById('loading-message').style.display = 'none';
+            document.getElementById('error-message').innerText = `Erreur: ${error.message}`;
+            document.getElementById('error-message').style.display = 'block';
+        });
+    
+    // Fonction pour rediriger vers la page de carte avec l'ID du parcours
+    function redirectToTrail(id) {
+        window.location.href = `detailTrail.html?id=${id}`;
+    }
+</script>
 
-        <footer>
-            <p>&copy; 2025 ChronoTrail. Tous droits réservés.</p>
-        </footer>
-    </div>
 </body>
 </html>

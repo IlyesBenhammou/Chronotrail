@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoTrail - Une journée, 6 courses !</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="logo.png" />
+</head>
+<body>
+    <div class="container">
+     
+        <header>
+            <h1>Bienvenue sur ChronoTrail</h1>
+            <p>Une journée, 6 courses sur 6 circuits !</p>
+            <section id="cta">
+                <a href="connexion.html" class="button">Ajouter course ou détail course</a>
+                <a href="eh.html" class="button">Détail Coureur</a>
+            </section>
+        </header>
+
+        <section id="description">
+            <h2>À propos de l'événement</h2>
+            <p>ChronoTrail est une journée intense de courses avec <strong>6 courses réparties sur 6 circuits différents. L'événement peut accueillir jusqu'à <strong>300 participants</strong>.</p>
+            <p>Toutes les courses se déroulent <strong>le même jour</strong>, et chaque coureur peut participer à plusieurs courses. Grâce à un dossard équipé d'un transpondeur RFID, vous serez suivi en temps réel tout au long de l'événement.</p>
+            <p>Cette édition de ChronoTrail traverse <strong>toute la région de la Normandie</strong>, offrant des parcours variés.</p>
+            
+            <h3>🎟️ Grande Tombola ChronoTrail</h3>
+            <p>Pour récompenser tous les finishers, une <strong>grande tombola</strong> sera organisée à la fin de l'événement !</p>
+            <p><strong>Comment participer ?</strong></p>
+            <ul>
+                <li>🏁 <strong>Chaque coureur qui termine une course</strong> reçoit un ticket de tombola.</li>
+                <li>🎫 <strong>Plus vous terminez de courses, plus vous avez de tickets</strong> et donc de chances de gagner !</li>
+                <li>🎉 Un tirage au sort sera effectué en fin de journée pour désigner le grand gagnant.</li>
+            </ul>
+            <p>🎁 <strong>Récompenses :</strong></p>
+            <ul>
+                <li>🚗 <strong>Une Fiat Multipla (1998)</strong> – Un véhicule au design révolutionnaire !</li>
+                <li>✈️ <strong>Un voyage au Bangladesh</strong> – Une aventure unique à l'autre bout du monde !</li>
+            </ul>
+            <p>📅 Le tirage aura lieu juste après la dernière course. Soyez présents pour découvrir les gagnants !</p>
+        </section>
+
+        <section id="courses-list">
+            <h2>Liste des courses disponibles</h2>
+            <div id="loading-message" class="loading">Chargement des courses...</div>
+            <div id="error-message" class="error" style="display: none;"></div>
+            
+            <div id="courses-container">
+                <!-- Les courses seront chargées dynamiquement ici -->
+            </div>
+        </section>
+
+        <section id="cta">
+            <a href="formulaire.html" class="button">S'inscrire maintenant</a>
+    
+        </section>
+
+        <footer>
+            <p>&copy; 2025 ChronoTrail. Tous droits réservés.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fonction pour formater une date
+            function formatDate(dateString) {
+                if (!dateString) return 'Non spécifiée';
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    return dateString;
+                }
+            }
+
+            // Charger toutes les courses
+            fetch('/courses')
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(courses => {
+    document.getElementById('loading-message').style.display = 'none';
+    const container = document.getElementById('courses-container');
+    
+    if (courses.length === 0) {
+        container.innerHTML = '<p>Aucune course disponible pour le moment.</p>';
+        return;
+    }
+
+    // TRIER PAR HEURE DE DÉPART
+    courses.sort((a, b) => {
+        const hA = new Date(`1970-01-01T${a.heure_depart}`);
+        const hB = new Date(`1970-01-01T${b.heure_depart}`);
+        return hA - hB;
+    });
+
+    const table = document.createElement('table');
+    table.className = 'courses-table';
+    
+    // En-tête du tableau
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Nom</th>
+            <th>Date</th>
+            <th>Distance</th>
+            <th>Départ</th>
+            <th>Arrivée</th>
+            <th>Places max</th>
+            <th>Actions</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    // Corps du tableau
+    const tbody = document.createElement('tbody');
+    courses.forEach(course => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${course.nomcourse || '-'}</td>
+            <td>${formatDate(course.datecourse)}</td>
+            <td>${course.distance ? course.distance + ' km' : '-'}</td>
+            <td>${course.heure_depart || '-'}</td>
+            <td>${course.heure_arrivee || '-'}</td>
+            <td>${course.nb_max_participants || '-'}</td>
+            <td>
+                <a href="detailTrail.html?id=${course.idcourse}" class="button small">Détails</a>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+})
+
+                .catch(err => {
+                    document.getElementById('loading-message').style.display = 'none';
+                    document.getElementById('error-message').innerText = `Erreur: ${err.message}`;
+                    document.getElementById('error-message').style.display = 'block';
+                });
+        });
+        fetch('/courses')
+    .then(res => res.json())
+    .then(courses => {
+        const toutesCompletes = courses.every(course => course.places_restantes <= 0);
+
+        if (toutesCompletes) {
+            const btn = document.getElementById('inscription-btn');
+            btn.href = "#";
+            btn.classList.add("disabled");
+            btn.style.pointerEvents = "none"; // désactive le clic
+            btn.style.opacity = "0.5";
+            document.getElementById('complet-msg').style.display = "block";
+        }
+    })
+    .catch(err => {
+        console.error("Erreur de chargement des courses :", err);
+    });
+
+    </script>
+
+    <style>
+        .courses-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .courses-table th, .courses-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .courses-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .courses-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .button.small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .error {
+            color: #d9534f;
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</body>
+</html>

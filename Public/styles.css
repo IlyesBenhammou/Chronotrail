@@ -119,3 +119,26 @@ footer p {
     margin: 0;
     font-size: 0.9em;
 }
+#course-list button {
+    background: #eee;
+    border: none;
+    padding: 10px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    border-radius: 5px;
+  }
+  
+  #course-list button:hover {
+    background: #cce5ff;
+  }
+  
+  .info-item {
+    margin: 5px 0;
+  }
+  
+  .info-label {
+    font-weight: bold;
+  }
+  

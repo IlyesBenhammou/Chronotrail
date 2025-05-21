@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - ChronoTrail</title>
+    <link rel="stylesheet" href="styles2.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Préinscription aux courses ChronoTrail</h1>
+            <p>Remplissez ce formulaire pour participer aux courses.</p>
+        </header>
+
+        <section>
+            <form id="registration-form">
+                <label for="nom">Nom :</label>
+                <input type="text" id="nom" name="nomcoureur" required>
+                
+                <label for="prenom">Prénom :</label>
+                <input type="text" id="prenom" name="prenomcoureur" required>
+                
+                <label for="email">Email :</label>
+                <input type="email" id="email" name="email" required>
+                
+                <label for="telephone">Téléphone :</label>
+                <input type="tel" id="telephone" name="telephone" required>
+                
+                <label for="dateNaissance">Date de naissance :</label>
+                <input type="date" id="dateNaissance" name="datenaissance" required>
+                
+                <label>
+                    <input type="checkbox" id="accordPhoto" name="accordphoto" value="true">
+                    J'autorise l'utilisation de mon image
+                </label>
+                
+                <label for="course-select">Sélectionnez vos courses :</label>
+                <div id="loading-courses" class="loading">Chargement des courses disponibles...</div>
+                <select id="course-select" name="selectedCourses" multiple required>
+                    <!-- Les courses seront chargées ici -->
+                </select>
+                <p class="form-help">Maintenez la touche Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs courses</p>
+                
+                <button type="submit">S'inscrire</button>
+            </form>
+            
+            <div id="message" class="message" style="display: none;"></div>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 ChronoTrail. Tous droits réservés.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registration-form');
+            const messageContainer = document.getElementById('message');
+            const loadingCoursesMessage = document.getElementById('loading-courses');
+            
+            // Fonction pour formater une date
+            function formatDate(dateString) {
+                if (!dateString) return 'Non spécifiée';
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                } catch (e) {
+                    return dateString;
+                }
+            }
+            
+           // Charger toutes les courses disponibles
+fetch('/courses')
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    })
+    .then(courses => {
+        loadingCoursesMessage.style.display = 'none';
+        
+        if (courses.length === 0) {
+            const selectElement = document.getElementById('course-select');
+            selectElement.innerHTML = '<option disabled>Aucune course disponible</option>';
+            return;
+        }
+        
+        // Trier les courses par heure de départ
+        courses.sort((a, b) => {
+            const hA = new Date(`1970-01-01T${a.heure_depart}`);
+            const hB = new Date(`1970-01-01T${b.heure_depart}`);
+            return hA - hB;
+        });
+        
+        // Créer les options pour la liste déroulante
+        const selectElement = document.getElementById('course-select');
+        
+        courses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.idcourse;
+
+            const placesMax = course.nb_max_participants || 0;
+            const placesRestantes = course.places_restantes || 0;
+
+            option.textContent = `${course.nomcourse || 'Sans nom'} - ${formatDate(course.datecourse)} - ${course.distance ? course.distance + ' km' : 'Distance N/A'} - Places restantes: ${placesRestantes}`;
+
+            // Désactiver l’option si la course est complète
+            if (placesRestantes <= 0) {
+                option.disabled = true;
+                option.textContent += " (Complet)";
+            }
+
+            selectElement.appendChild(option);
+        });
+    })
+    .catch(err => {
+        loadingCoursesMessage.style.display = 'none';
+        const selectElement = document.getElementById('course-select');
+        selectElement.innerHTML = '<option disabled>Erreur de chargement</option>';
+        
+        messageContainer.textContent = `Erreur lors du chargement des courses: ${err.message}`;
+        messageContainer.className = 'message error';
+        messageContainer.style.display = 'block';
+    });
+
+
+            // Fonction pour calculer l'âge à partir d'une date de naissance
+            function getAgeFromDate(dateString) {
+                const today = new Date();
+                const birthDate = new Date(dateString);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                return age;
+            }
+
+            // Gérer la soumission du formulaire
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Afficher un message de chargement
+                showMessage('Envoi en cours...', 'info');
+                
+                // Récupérer les données du formulaire
+                const formData = new FormData(form);
+                
+                // Récupérer les courses sélectionnées
+                const selectedCourses = Array.from(
+                    document.getElementById('course-select').selectedOptions
+                ).map(option => parseInt(option.value));
+                
+                // Vérifier qu'au moins une course est sélectionnée
+                if (selectedCourses.length === 0) {
+                    showMessage('Veuillez sélectionner au moins une course', 'error');
+                    return;
+                }
+                const telephone = formData.get('telephone');
+
+// Vérifier le format du numéro de téléphone
+const phoneRegex = /^0[67]\d{8}$/;
+
+if (!phoneRegex.test(telephone)) {
+    showMessage('Le numéro de téléphone doit commencer par 06 ou 07 et contenir exactement 10 chiffres.', 'error');
+    return;
+}
+
+
+                const dateNaissance = formData.get('datenaissance');
+                const age = getAgeFromDate(dateNaissance);
+
+                if (age < 16) {
+                    showMessage('Vous devez avoir au moins 16 ans pour vous inscrire.', 'error');
+                    return;
+                }
+
+                // Créer l'objet coureur avec les données du formulaire
+                const coureur = {
+                    nomcoureur: formData.get('nomcoureur'),
+                    prenomcoureur: formData.get('prenomcoureur'),
+                    email: formData.get('email'),
+                    telephone: formData.get('telephone'),
+                    datenaissance: formData.get('datenaissance'),
+                    accordphoto: formData.get('accordphoto') === 'true',
+                    courses: selectedCourses // Ajouter les courses sélectionnées
+                };
+                
+                // Vérifier que tous les champs obligatoires sont remplis
+                for (const [key, value] of Object.entries(coureur)) {
+                    if (key !== 'accordphoto' && key !== 'courses' && !value) {
+                        showMessage('Tous les champs personnels doivent être remplis', 'error');
+                        return;
+                    }
+                }
+                
+                fetch('/api/preinscription', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(coureur)
+})
+.then(response => {
+    // Log de la réponse pour mieux comprendre ce qui est renvoyé
+    console.log('Réponse du serveur:', response);
+    
+    // Vérifier si la réponse est correcte
+    if (!response.ok) {
+        // Si le serveur renvoie une erreur (code HTTP non 2xx), on récupère le corps de la réponse
+        return response.text().then(text => {
+            console.error('Erreur serveur:', text);
+            throw new Error(`Erreur serveur: ${text}`);
+        });
+    }
+
+    // Vérifier si le serveur renvoie une réponse JSON
+    let contentType = response.headers.get('content-type');
+    if (contentType && contentType.indexOf('application/json') !== -1) {
+        return response.json().then(data => {
+            return data;
+        });
+    } else {
+        return response.text().then(text => {
+            console.error('Réponse non-JSON:', text);
+            throw new Error('Le serveur a renvoyé une réponse non-JSON');
+        });
+    }
+})
+.then(data => {
+    // Si tout est OK, on affiche un message de succès
+    console.log('Succès:', data);
+    showMessage('Préinscription enregistrée avec succès!', 'success');
+    form.reset();
+})
+.catch(error => {
+    // Log l'erreur complète dans la console pour un meilleur débogage
+    console.error('Erreur:', error);
+    showMessage(`Erreur: ${error.message}`, 'error');
+});
+
+
+            });
+            
+            // Fonction pour afficher les messages
+            function showMessage(text, type) {
+                messageContainer.textContent = text;
+                messageContainer.className = `message ${type}`;
+                messageContainer.style.display = 'block';
+                
+                // Faire défiler jusqu'au message
+                messageContainer.scrollIntoView({ behavior: 'smooth' });
+                
+                // Masquer le message après 5 secondes en cas de succès
+                if (type === 'success') {
+                    setTimeout(() => {
+                        messageContainer.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+    
+    <style>
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .loading {
+            margin: 10px 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        select[multiple] {
+            width: 100%;
+            min-height: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            margin-bottom: 15px;
+        }
+        
+        select[multiple] option {
+            padding: 8px;
+            margin-bottom: 2px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eee;
+        }
+        
+        select[multiple] option:hover {
+            background-color: #e9e9e9;
+        }
+        
+        .form-help {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+        
+        button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
+</body>
+</html>
+
