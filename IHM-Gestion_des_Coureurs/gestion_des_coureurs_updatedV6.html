@@ -803,25 +803,25 @@
         }
         
         function sendDossardToDatabase(dossard) {
-            showNotification("En cours", "Mise à jour des données du dossard...", "info");
-            fetch(`${API_BASE_URL}/dossards/${dossard.iddossard}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(dossard),
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error("Erreur lors de l'envoi des données du dossard.");
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Données du dossard mises à jour avec succès :", data);
-                    showNotification("Succès", `Statut du dossard n°${dossard.numero} mis à jour avec succès.`, "success");
-                })
-                .catch(error => {
-                    console.error("Erreur lors de l'envoi des données du dossard :", error);
-                    showNotification("Erreur", "Échec de la mise à jour du dossard. Veuillez réessayer.", "error");
-                });
-        }
+    showNotification("En cours", "Mise à jour des données du dossard...", "info");
+    fetch(`${API_BASE_URL}/dossards/${dossard.iddossard}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disponible: dossard.disponible }),
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Erreur lors de l'envoi des données du dossard.");
+        return response.json();
+    })
+    .then(data => {
+        console.log("Données du dossard mises à jour avec succès :", data);
+        showNotification("Succès", `Statut du dossard n°${dossard.numero} mis à jour avec succès.`, "success");
+    })
+    .catch(error => {
+        console.error("Erreur lors de l'envoi des données du dossard :", error);
+        showNotification("Erreur", "Échec de la mise à jour du dossard. Veuillez réessayer.", "error");
+    });
+}
         
         function assignDossardToCoureur(dossardId, coureurId) {
             showNotification("En cours", "Attribution du dossard au coureur...", "info");

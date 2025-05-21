@@ -17,7 +17,7 @@ const pool = new Pool({
 
 // Middleware
 app.use(bodyParser.json());
-app.use(express.static('/home/projet-chrono'));
+app.use(express.static('/home/projet-chrono/'));
 
 // Route pour récupérer tous les coureurs
 app.get('/api/coureurs', async (req, res) => {
@@ -49,7 +49,7 @@ app.put('/api/coureurs/:id', async (req, res) => {
 
 // Route pour servir la page HTML
 app.get('/', (req, res) => {
-    res.sendFile(path.join('/home/projet-chrono', 'test.html'));
+    res.sendFile(path.join('/home/projet-chrono', 'gestion_coureurs.html'));
 });
 
 // GESTION DES DOSSARDS - NOUVELLES ROUTES
@@ -255,6 +255,111 @@ app.get('/api/dossards/par-uid/:uid', async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
+// 9. Vérifier et mettre à jour la disponibilité d'un dossard
+app.post('/api/dossards/disponibilite/:iddossard', async (req, res) => {
+    const { iddossard } = req.params;
+    const { disponible } = req.body;
+    
+    // Vérifie que la valeur de disponibilité est bien fournie
+    if (disponible === undefined) {
+        return res.status(400).json({ 
+            message: 'La valeur de disponibilité (true/false) doit être fournie.' 
+        });
+    }
+    
+    try {
+        // Vérifie si le dossard existe
+        const checkResult = await pool.query(
+            'SELECT numero, disponible FROM dossards WHERE iddossard = $1',
+            [iddossard]
+        );
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Dossard non trouvé.' });
+        }
+        
+        const dossardActuel = checkResult.rows[0];
+        
+        // Si le dossard est déjà dans l'état demandé, pas besoin de mise à jour
+        if (dossardActuel.disponible === disponible) {
+            return res.json({
+                message: `Le dossard numéro ${dossardActuel.numero} est déjà ${disponible ? 'disponible' : 'indisponible'}.`,
+                numero: dossardActuel.numero,
+                disponible: disponible
+            });
+        }
+        
+        // Si on veut rendre le dossard disponible, il faut aussi effacer l'UID associé
+        if (disponible === true) {
+            await pool.query(
+                'UPDATE dossards SET disponible = true, uid = NULL WHERE iddossard = $1',
+                [iddossard]
+            );
+        } else {
+            // Si on veut rendre le dossard indisponible sans l'assigner à un utilisateur
+            await pool.query(
+                'UPDATE dossards SET disponible = false WHERE iddossard = $1',
+                [iddossard]
+            );
+        }
+        
+        res.json({
+            message: `Disponibilité du dossard numéro ${dossardActuel.numero} mise à jour avec succès.`,
+            numero: dossardActuel.numero,
+            disponible: disponible
+        });
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour de la disponibilité du dossard:', error);
+        res.status(500).json({ message: 'Erreur interne du serveur.' });
+    }
+});
+
+
+// 10. Obtenir le statut de disponibilité d'un dossard
+app.get('/api/dossards/disponibilite/:iddossard', async (req, res) => {
+    const { iddossard } = req.params;
+    
+    try {
+        const result = await pool.query(
+            'SELECT numero, disponible FROM dossards WHERE iddossard = $1',
+            [iddossard]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Dossard non trouvé.' });
+        }
+        
+        const dossard = result.rows[0];
+        res.json({
+            numero: dossard.numero,
+            disponible: dossard.disponible
+        });
+    } catch (err) {
+        console.error('Erreur lors de la vérification de la disponibilité du dossard:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
+// Route pour mettre à jour un dossard
+app.put('/api/dossards/:iddossard', async (req, res) => {
+    const { iddossard } = req.params;
+    const { disponible } = req.body;
+
+    try {
+        await pool.query(
+            'UPDATE dossards SET disponible = $1 WHERE iddossard = $2',
+            [disponible, iddossard]
+        );
+        res.json({ message: 'Mise à jour réussie' });
+    } catch (err) {
+        console.error('Erreur mise à jour :', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
 
 // Lancement du serveur
 app.listen(port, () => {
