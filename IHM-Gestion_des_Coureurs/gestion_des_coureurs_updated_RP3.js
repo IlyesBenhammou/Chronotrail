@@ -17,7 +17,7 @@ const pool = new Pool({
 
 // Middleware
 app.use(bodyParser.json());
-app.use(express.static('/home/projet-chrono'));
+app.use(express.static('/home/projet-chrono/'));
 
 // Route pour récupérer tous les coureurs
 app.get('/api/coureurs', async (req, res) => {
@@ -49,7 +49,7 @@ app.put('/api/coureurs/:id', async (req, res) => {
 
 // Route pour servir la page HTML
 app.get('/', (req, res) => {
-    res.sendFile(path.join('/home/projet-chrono', 'test.html'));
+    res.sendFile(path.join('/home/projet-chrono', 'gestion_coureurs.html'));
 });
 
 // GESTION DES DOSSARDS - NOUVELLES ROUTES
