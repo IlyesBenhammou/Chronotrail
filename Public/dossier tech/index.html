@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChronoTrail - Une journée, 6 courses !</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" href="logo.png" />
+    <link rel="icon" type="image/png" href="LOGOCHRONO.png" />
 </head>
 <body>
     <div class="container">
@@ -164,6 +164,20 @@
     .catch(err => {
         console.error("Erreur de chargement des courses :", err);
     });
+    const row = document.createElement('tr');
+row.innerHTML = `
+    <td data-label="Nom">${course.nomcourse || '-'}</td>
+    <td data-label="Date">${formatDate(course.datecourse)}</td>
+    <td data-label="Distance">${course.distance ? course.distance + ' km' : '-'}</td>
+    <td data-label="Départ">${course.heure_depart || '-'}</td>
+    <td data-label="Arrivée">${course.heure_arrivee || '-'}</td>
+    <td data-label="Places max">${course.nb_max_participants || '-'}</td>
+    <td data-label="Actions">
+        <a href="detailTrail.html?id=${course.idcourse}" class="button small">Détails</a>
+    </td>
+`;
+
+
 
     </script>
 
@@ -208,7 +222,64 @@
             padding: 15px;
             border-radius: 4px;
             margin-top: 20px;
+        
+
         }
+        @media screen and (max-width: 768px) {
+    .courses-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .courses-table thead {
+        display: none;
+    }
+
+    .courses-table tbody, 
+    .courses-table tr, 
+    .courses-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .courses-table tr {
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        background-color: #fff;
+    }
+
+    .courses-table td {
+        padding: 8px 10px;
+        text-align: left;
+        position: relative;
+    }
+
+    .courses-table td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    .button.small {
+        display: inline-block;
+        margin-top: 10px;
+    }
+    .courses-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+}
+
     </style>
 </body>
 </html>

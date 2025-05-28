@@ -20,6 +20,8 @@ const pool = new Pool({
     port: 5432,
 });
 
+
+
 // Middleware pour analyser les données
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -313,25 +315,8 @@ app.post('/save-course', async (req, res) => {
     }
 });
 
-// Route pour récupérer une course spécifique
-app.get("/course/:id", async (req, res) => {
-    const id = req.params.id;
-    try {
-        const result = await pool.query(
-            "SELECT * FROM course WHERE idcourse = $1",
-            [id]
-        );
+  
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: "Course non trouvée" });
-        }
-
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error("Erreur base de données:", error);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
-});
 
 // Route pour récupérer toutes les courses
 app.get('/courses', async (req, res) => {
@@ -358,27 +343,95 @@ app.get('/courses', async (req, res) => {
 });
 
 
-app.delete('/course/:id', async (req, res) => {
+// Remplacez votre route /course/:id par ceci pour déboguer :
+
+app.get('/course/:id', async (req, res) => {
     const id = req.params.id;
-    console.log(`Tentative de suppression de la course avec ID: ${id}`);
     
     try {
-        // Vérifier si la course existe
-        const checkResult = await pool.query("SELECT * FROM course WHERE idcourse = $1", [id]);
-        console.log('Résultat de la vérification:', checkResult.rows);
+      const courseRes = await pool.query('SELECT * FROM course WHERE idcourse = $1', [id]);
+      if (courseRes.rows.length === 0) {
+        return res.status(404).json({ error: 'Course non trouvée' });
+      }
 
-        if (checkResult.rows.length === 0) {
-            return res.status(404).json({ message: "Course non trouvée" });
-        }
+      // 🔍 DEBUG - Voir TOUTES les inscriptions pour cette course
+      const debugAllInscriptions = await pool.query(`
+        SELECT
+            i.idcourse,
+            c.idcoureur,
+            c.nomcoureur,
+            c.prenomcoureur,
+            i.heure_depart,
+            i.heure_arrivee,
+            CASE 
+                WHEN i.heure_depart IS NULL THEN 'DEPART_NULL'
+                WHEN i.heure_arrivee IS NULL THEN 'ARRIVEE_NULL'
+                ELSE 'COMPLETE'
+            END as statut
+        FROM inscription i
+        JOIN coureurs c ON i.idcoureur = c.idcoureur
+        WHERE i.idcourse = $1
+        ORDER BY c.nomcoureur
+      `, [id]);
 
-        // Supprimer la course
-        const deleteResult = await pool.query("DELETE FROM course WHERE idcourse = $1 RETURNING idcourse", [id]);
-        console.log('Résultat de la suppression:', deleteResult.rows);
+      console.log('🔍 DEBUG - TOUTES LES INSCRIPTIONS:');
+      console.log(debugAllInscriptions.rows);
 
-        res.status(200).json({ message: "Course supprimée avec succès", deletedId: deleteResult.rows[0].idcourse });
-    } catch (error) {
-        console.error("Erreur lors de la suppression de la course:", error);
-        res.status(500).json({ error: "Erreur serveur lors de la suppression", details: error.message });
+      // Classement pour une course avec LEFT JOIN pour afficher tous les coureurs même sans fiche
+const classementRes = await pool.query(`
+SELECT
+    i.idcourse,
+    i.idcoureur,
+    c.nomcoureur,
+    c.prenomcoureur,
+    i.heure_depart,
+    i.heure_arrivee,
+    i.heure_arrivee - i.heure_depart AS temps_total,
+    EXTRACT(EPOCH FROM i.heure_arrivee - i.heure_depart) AS temps_total_secondes,
+    RANK() OVER (
+        ORDER BY EXTRACT(EPOCH FROM i.heure_arrivee - i.heure_depart)
+    ) AS classement
+FROM
+    inscription i
+LEFT JOIN
+    coureurs c ON i.idcoureur = c.idcoureur
+WHERE
+    i.idcourse = $1
+    AND i.heure_depart IS NOT NULL
+    AND i.heure_arrivee IS NOT NULL
+ORDER BY
+    classement
+
+  `, [id]);
+  
+
+  console.log('🏆 Classement SQL:', classementRes.rows);
+
+      // Coureurs sans temps complets
+      const inscritsSansTempsRes = await pool.query(`
+        SELECT c.nomcoureur, c.prenomcoureur, c.idcoureur,
+               i.heure_depart, i.heure_arrivee
+        FROM inscription i
+        JOIN coureurs c ON i.idcoureur = c.idcoureur
+        WHERE i.idcourse = $1
+        AND (i.heure_depart IS NULL OR i.heure_arrivee IS NULL)
+        ORDER BY c.nomcoureur, c.prenomcoureur
+      `, [id]);
+
+      console.log('📋 COUREURS EN ATTENTE:');
+      console.log(inscritsSansTempsRes.rows);
+
+      const course = {
+        ...courseRes.rows[0],
+        classement: classementRes.rows,
+        inscritsSansTemps: inscritsSansTempsRes.rows
+      };
+
+      res.json(course);
+
+    } catch (err) {
+      console.error('Erreur serveur:', err);
+      res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
