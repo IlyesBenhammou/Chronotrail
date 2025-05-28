@@ -4,21 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Choix du Parcours de Trail</title>
-    <link rel="stylesheet" href="styleGestionJourneCoureur.css">
     <style>
-        .delete-btn {
-            background-color: #ff4d4d;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        #loading-message {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            padding: 20px;
+        }
+
+        #error-message {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 16px;
+            padding: 20px;
+            background-color: #fadbd8;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        #parcours-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .parcours-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             cursor: pointer;
-            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .parcours-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .parcours-content h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .parcours-content p {
+            margin: 8px 0;
+            color: #666;
+        }
+
+        .location {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .date {
+            color: #3498db;
+            font-style: italic;
+        }
+
+        .distance {
+            color: #e67e22;
             font-weight: bold;
         }
 
+        .participants {
+            color: #9b59b6;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
         .delete-btn:hover {
-            background-color: #e60000;
+            background-color: #c0392b;
         }
 
         .confirm-dialog {
@@ -34,36 +120,85 @@
 
         .dialog-content {
             background-color: white;
-            padding: 20px;
-            border-radius: 5px;
+            padding: 30px;
+            border-radius: 10px;
             max-width: 400px;
             width: 80%;
             text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .dialog-content h3 {
+            color: #e74c3c;
+            margin-bottom: 15px;
         }
 
         .dialog-buttons {
             display: flex;
             justify-content: space-around;
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .dialog-btn {
-            padding: 8px 20px;
+            padding: 10px 25px;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            transition: background-color 0.2s;
         }
 
         .confirm-btn {
-            background-color: #ff4d4d;
+            background-color: #e74c3c;
             color: white;
         }
 
-        .cancel-btn {
-            background-color: #ccc;
-            color: #333;
+        .confirm-btn:hover {
+            background-color: #c0392b;
         }
+
+        .cancel-btn {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background-color: #7f8c8d;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            display: none;
+        }
+        .btn-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.btn-link {
+    display: inline-block;
+    background-color: #3498db;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-link:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+
     </style>
 </head>
 <body>
@@ -71,15 +206,16 @@
 
     <div id="loading-message">Chargement des parcours...</div>
     <div id="error-message" style="display: none;"></div>
+    <div id="success-message" class="success-message"></div>
 
     <div id="parcours-container"></div>
 
     <!-- Boîte de dialogue de confirmation -->
     <div id="confirm-dialog" class="confirm-dialog">
         <div class="dialog-content">
-            <h3>Confirmation de suppression</h3>
+            <h3>⚠️ Confirmation de suppression</h3>
             <p>Êtes-vous sûr de vouloir supprimer cette course ?</p>
-            <p>Cette action est irréversible.</p>
+            <p><strong>Cette action est irréversible.</strong></p>
             <div class="dialog-buttons">
                 <button id="cancel-delete" class="dialog-btn cancel-btn">Annuler</button>
                 <button id="confirm-delete" class="dialog-btn confirm-btn">Confirmer</button>
@@ -87,58 +223,129 @@
         </div>
     </div>
 
+    <section class="btn-container">
+        <a class="btn-link" href="index.html">Accueil</a>
+    </section>
+
     <script>
         let courseToDeleteId = null;
+        let courseToDeleteName = null;
 
-        function showDeleteConfirmation(id, event) {
+        function showDeleteConfirmation(id, name, event) {
             event.stopPropagation();
             courseToDeleteId = id;
-            document.getElementById('confirm-dialog').style.display = 'flex';
+            courseToDeleteName = name;
+            
+            // Mettre à jour le texte de confirmation avec le nom de la course
+            const dialog = document.getElementById('confirm-dialog');
+            const content = dialog.querySelector('.dialog-content p');
+            content.innerHTML = `Êtes-vous sûr de vouloir supprimer la course <strong>"${name}"</strong> ?`;
+            
+            dialog.style.display = 'flex';
         }
 
         function closeDialog() {
             document.getElementById('confirm-dialog').style.display = 'none';
+            courseToDeleteId = null;
+            courseToDeleteName = null;
         }
 
-        async function deleteCourse(id) {
-            try {
-                const url = `/api/course/${id}`;
-                const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+        function showSuccessMessage(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // Masquer le message après 3 secondes
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
 
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
+        // Remplacez la fonction deleteCourse dans votre HTML par celle-ci :
 
-                const result = await response.json();
-                console.log("Course supprimée:", result);
+async function deleteCourse(id) {
+    try {
+        console.log(`Tentative de suppression de la course avec ID: ${id}`);
+        
+        // Utiliser l'endpoint correct d'après votre serveur
+        const response = await fetch(`/course/${id}`, {
+            method: 'DELETE',
+            headers: { 
+                'Content-Type': 'application/json'
+            }
+        });
 
-                // Supprimer la carte de la course de l'interface
-                const cardToRemove = document.querySelector(`[data-course-id="${id}"]`);
-                if (cardToRemove) {
-                    cardToRemove.remove();
-                }
+        console.log(`Réponse du serveur: ${response.status} ${response.statusText}`);
 
-                // Afficher un message s’il ne reste plus de cartes
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Erreur ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json().catch(() => ({ message: 'Course supprimée' }));
+        console.log("Course supprimée avec succès:", result);
+
+        // Supprimer la carte de la course de l'interface avec animation
+        const cardToRemove = document.querySelector(`[data-course-id="${id}"]`);
+        if (cardToRemove) {
+            cardToRemove.style.transition = 'opacity 0.3s, transform 0.3s';
+            cardToRemove.style.opacity = '0';
+            cardToRemove.style.transform = 'scale(0.8)';
+            
+            setTimeout(() => {
+                cardToRemove.remove();
+                
+                // Vérifier s'il reste des courses
                 const container = document.getElementById('parcours-container');
                 if (container.children.length === 0) {
                     const errorMessage = document.getElementById('error-message');
                     errorMessage.innerText = "Aucun parcours disponible.";
                     errorMessage.style.display = 'block';
                 }
-
-            } catch (error) {
-                console.error("Erreur lors de la suppression:", error);
-                alert(`Erreur lors de la suppression: ${error.message}`);
-            }
+            }, 300);
         }
+
+        showSuccessMessage(`Course "${courseToDeleteName}" supprimée avec succès !`);
+
+    } catch (error) {
+        console.error("Erreur lors de la suppression:", error);
+        
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.innerHTML = `
+            <strong>Erreur lors de la suppression:</strong> ${error.message}<br>
+            <small>Vérifiez que votre serveur est démarré et que l'endpoint /course/${id} est accessible.</small>
+        `;
+        errorDiv.style.display = 'block';
+        
+        // Masquer le message d'erreur après 5 secondes
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Également, ajoutez cette fonction pour gérer les erreurs CORS si nécessaire
+function addCorsHeaders() {
+    // Si vous avez des problèmes de CORS, ajoutez ces headers à votre serveur Express :
+    /*
+    app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        if (req.method === 'OPTIONS') {
+            res.sendStatus(200);
+        } else {
+            next();
+        }
+    });
+    */
+}
 
         function redirectToTrail(id) {
             window.location.href = `detailTrail.html?id=${id}`;
         }
 
+        // Event listeners pour la boîte de dialogue
         document.getElementById('cancel-delete').addEventListener('click', closeDialog);
         document.getElementById('confirm-delete').addEventListener('click', () => {
             if (courseToDeleteId) {
@@ -147,15 +354,23 @@
             }
         });
 
+        // Fermer la boîte de dialogue en cliquant à l'extérieur
+        document.getElementById('confirm-dialog').addEventListener('click', (e) => {
+            if (e.target.id === 'confirm-dialog') {
+                closeDialog();
+            }
+        });
+
         // Charger les parcours
-        fetch('/courses')
-            .then(response => {
+        async function loadCourses() {
+            try {
+                const response = await fetch('/courses');
+                
                 if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
+                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
                 }
-                return response.json();
-            })
-            .then(courses => {
+                
+                const courses = await response.json();
                 document.getElementById('loading-message').style.display = 'none';
                 const container = document.getElementById('parcours-container');
 
@@ -169,31 +384,58 @@
                     const card = document.createElement('div');
                     card.className = 'parcours-card';
                     card.setAttribute('data-course-id', course.idcourse);
-                    card.onclick = () => redirectToTrail(course.idcourse);
+                    
+                    // Éviter que le clic sur supprimer déclenche la redirection
+                    card.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('delete-btn')) {
+                            redirectToTrail(course.idcourse);
+                        }
+                    });
 
-                    const dateStr = course.datecourse ? new Date(course.datecourse).toLocaleString('fr-FR') : 'Date non spécifiée';
+                    const dateStr = course.datecourse ? 
+                        new Date(course.datecourse).toLocaleString('fr-FR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) : 'Date non spécifiée';
+
+                    const courseName = course.nomcourse || `Parcours #${course.idcourse}`;
 
                     card.innerHTML = `
+                        <button class="delete-btn" onclick="showDeleteConfirmation(${course.idcourse}, '${courseName.replace(/'/g, "\\'")}', event)" title="Supprimer cette course">
+                            ✕
+                        </button>
                         <div class="parcours-content">
-                            <h3>${course.nomcourse || `Parcours #${course.idcourse}`}</h3>
-                            <p class="location">Départ: ${course.heure_depart || 'Non spécifié'} → Arrivée: ${course.heure_arrivee || 'Non spécifié'}</p>
-                            <p class="date">${dateStr}</p>
-                            <p class="distance">${course.distance ? `Distance: ${course.distance} km` : ''}</p>
-                            <p class="participants">Max participants: ${course.nb_max_participants || 'Non spécifié'}</p>
-                            <button class="delete-btn" onclick="showDeleteConfirmation(${course.idcourse}, event)">Supprimer</button>
+                            <h3>${courseName}</h3>
+                            <p class="location">🏃‍♂️ Départ: ${course.heure_depart || 'Non spécifié'} → Arrivée: ${course.heure_arrivee || 'Non spécifié'}</p>
+                            <p class="date">📅 ${dateStr}</p>
+                            ${course.distance ? `<p class="distance">📏 Distance: ${course.distance} km</p>` : ''}
+                            <p class="participants">👥 Max participants: ${course.nb_max_participants || 'Non spécifié'}</p>
                         </div>
                     `;
 
                     container.appendChild(card);
                 });
-            })
-            .catch(error => {
+
+            } catch (error) {
                 console.error("Erreur lors du chargement des parcours:", error);
                 document.getElementById('loading-message').style.display = 'none';
                 const err = document.getElementById('error-message');
-                err.innerText = `Erreur: ${error.message}`;
+                err.innerHTML = `
+                    <strong>Erreur:</strong> ${error.message}<br>
+                    <small>Vérifiez que votre serveur est démarré et accessible.</small>
+                `;
                 err.style.display = 'block';
-            });
+            }
+        }
+
+        // Charger les parcours au démarrage
+        loadCourses();
+
+        // Recharger les parcours toutes les 30 secondes (optionnel)
+        // setInterval(loadCourses, 30000);
     </script>
 </body>
 </html>
