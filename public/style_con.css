@@ -200,6 +200,7 @@ h1 {
         0 5px 10px rgba(0, 0, 0, 0.1);
 }
 
+
 .btn:hover::before {
     left: 100%;
 }

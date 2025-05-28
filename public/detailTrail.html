@@ -1,185 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Carte du Trail</title>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap"
-    rel="stylesheet"
-  />
-  <style>
-    /* Style général */
-    body, html {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      background-image: url('fond.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      color: #333;
-      line-height: 1.6;
-    }
-
-    /* Conteneur principal */
-    .container {
-      max-width: auto;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    /* Messages de chargement et d'erreur */
-    #loading-message {
-      background: rgba(255, 255, 255, 0.85);
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      margin: 20px;
-      backdrop-filter: blur(5px);
-      font-size: 1.2em;
-      color: #28a745;
-      font-weight: 700;
-    }
-
-    .error {
-      background: rgba(255, 255, 255, 0.85);
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      margin: 20px;
-      backdrop-filter: blur(5px);
-      color: #dc3545;
-      font-weight: 700;
-    }
-
-    /* En-tête */
-    #trail-title {
-      background: rgba(255, 255, 255, 0.85);
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      margin: 20px;
-      backdrop-filter: blur(5px);
-      font-size: 2.5em;
-      font-weight: 700;
-      color: #28a745;
-    }
-
-    /* Détails de la course */
-    #course-details {
-      background: rgba(255, 255, 255, 0.5);
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-      margin: 20px;
-      backdrop-filter: blur(5px);
-      font-size: 1.1em;
-      line-height: 1.8;
-    }
-
-    /* Carte */
-    #map {
-
-      height: 50vh;
-      width: 30vh;
-      margin: 20px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-      overflow: hidden;
-    }
-
-    /* Section classement */
-    #ranking-section {
-      background: rgba(255, 255, 255, 0.5);
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-      margin: 20px;
-      backdrop-filter: blur(5px);
-    }
-
-    #ranking-section h2 {
-      color: #28a745;
-      font-size: 2em;
-      border-bottom: 2px solid #28a745;
-      padding-bottom: 5px;
-      margin-top: 0;
-      font-weight: 700;
-    }
-
-    /* Liste des participants */
-    #classement-test {
-      margin-top: 20px;
-    }
-
-    #classement-test > div {
-      background: rgba(248, 249, 250, 0.85);
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      border-left: 4px solid #28a745;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease-in-out;
-      font-size: 1.1em;
-      font-weight: 400;
-    }
-
-    #classement-test > div:hover {
-      transform: translateX(5px);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Message aucun coureur */
-    #classement-test .no-runners {
-      background: rgba(255, 255, 255, 0.7);
-      padding: 20px;
-      text-align: center;
-      border-radius: 10px;
-      font-style: italic;
-      color: #666;
-      border: 2px dashed #ccc;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .container {
-        padding: 10px;
-      }
-
-      #trail-title {
-        font-size: 2em;
-        padding: 20px;
-        margin: 10px;
-      }
-
-      #course-details, #ranking-section {
-        padding: 15px;
-        margin: 10px;
-      }
-
-      #map {
-        margin: 10px;
-        height: 40vh;
-      }
-
-      #ranking-section h2 {
-        font-size: 1.5em;
-      }
-    }
-  </style>
-</head>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Détails de la course</title>
@@ -335,13 +156,23 @@ function formatDate(dateString) {
 }
 
 function formatTime(timeString) {
-  if (!timeString) return 'Non spécifié';
-  const date = new Date(timeString);
-  return date.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
+  if (!timeString || timeString === null || timeString === 'null') return 'Non spécifié';
+  
+  try {
+    const date = new Date(timeString);
+    // Vérifier si la date est valide
+    if (isNaN(date.getTime())) {
+      return 'Non spécifié';
+    }
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  } catch (error) {
+    console.error('Erreur lors du formatage de l\'heure:', error, timeString);
+    return 'Non spécifié';
+  }
 }
 
 function processCoordinates(data) {
@@ -403,30 +234,50 @@ fetch(`/course/${courseId}`)
     if (Array.isArray(course.classement) && course.classement.length > 0) {
       console.log('Affichage de', course.classement.length, 'coureur(s)');
       
-      course.classement.forEach((coureur, i) => {
-        const div = document.createElement('div');
-        div.className = 'runner-card';
-        
-        div.innerHTML = `
-          <div class="runner-info">
-            <div class="runner-name">
-              <strong>${i + 1}.</strong> ${coureur.prenomcoureur} ${coureur.nomcoureur}
-            </div>
-            <div class="runner-times">
-              <div class="time-info">
-                <div class="time-label">Heure de départ</div>
-                <div class="time-value">${formatTime(coureur.heure_depart)}</div>
-              </div>
-              <div class="time-info">
-                <div class="time-label">Heure d'arrivée</div>
-                <div class="time-value">${formatTime(coureur.heure_arrivee)}</div>
-              </div>
-            </div>
-          </div>
-        `;
-        
-        classementContainer.appendChild(div);
-      });
+      course.classement.forEach((coureur) => {
+  console.log('coureur objet:', coureur);
+
+  const div = document.createElement('div');
+  div.className = 'runner-card';
+
+  function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return 'Non spécifié';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return (h > 0 ? h.toString().padStart(2, '0') + ':' : '') +
+           m.toString().padStart(2, '0') + ':' +
+           s.toString().padStart(2, '0');
+  }
+
+  const classement = coureur.classement ?? coureur.Classement ?? 'N/A';
+
+  div.innerHTML = `
+    <div class="runner-info">
+      <div class="runner-name">
+        <strong>${classement}.</strong> ${coureur.prenomcoureur} ${coureur.nomcoureur}
+      </div>
+      <div class="runner-times">
+        <div class="time-info">
+          <div class="time-label">Départ</div>
+          <div class="time-value">${formatTime(coureur.heure_depart)}</div>
+        </div>
+        <div class="time-info">
+          <div class="time-label">Arrivée</div>
+          <div class="time-value">${formatTime(coureur.heure_arrivee)}</div>
+        </div>
+        <div class="time-info">
+          <div class="time-label">Temps total</div>
+          <div class="time-value">${formatDuration(coureur.temps_total_secondes)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  classementContainer.appendChild(div);
+});
+
+
     } else {
       console.log('Aucun coureur inscrit trouvé');
       const div = document.createElement('div');
@@ -447,5 +298,4 @@ fetch(`/course/${courseId}`)
   </script>
 </body>
 </html>
-
   
