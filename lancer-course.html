@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestion des courses</title>
+</head>
+<body>
+  <h1>Gestion des courses</h1>
+
+  <div>
+    <h2>Lancer une course</h2>
+    <label for="idcourse_lancer">ID de la course :</label>
+    <input type="number" id="idcourse_lancer" />
+    <button onclick="lancerCourse()">Lancer</button>
+  </div>
+
+  <div>
+    <h2>Terminer une course</h2>
+    <label for="idcourse_terminer">ID de la course :</label>
+    <input type="number" id="idcourse_terminer" />
+    <button onclick="terminerCourse()">Terminer</button>
+  </div>
+
+  <script>
+    function lancerCourse() {
+      const idcourse = document.getElementById("idcourse_lancer").value;
+      fetch("/api/lancer-course", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idcourse }),
+      })
+        .then(res => res.json())
+        .then(data => alert(data.message || data.error))
+        .catch(() => alert("Erreur réseau"));
+    }
+
+    function terminerCourse() {
+      const idcourse = document.getElementById("idcourse_terminer").value;
+      fetch("/api/terminer-course", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idcourse }),
+      })
+        .then(res => res.json())
+        .then(data => alert(data.message || data.error))
+        .catch(() => alert("Erreur réseau"));
+    }
+  </script>
+</body>
+</html>
