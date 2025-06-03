@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chronotrail – Gestion de Course</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    /* ... (garde ton CSS inchangé) ... */
+    #photo-finish img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <i class="fas fa-stopwatch"></i>
+    </div>
+    <h1>Chronotrail<br /><span style="font-weight: 400; font-size: 18px; opacity: 0.8;">Gestion de Course</span></h1>
+
+    <h3>📸 Photo Finish</h3>
+    <div id="photo-finish">Pas de photo finish chargée.</div>
+
+    <div class="input-group">
+      <label for="idinscription">ID Inscription</label>
+      <div class="input-wrapper">
+        <i class="fas fa-id-badge input-icon"></i>
+        <input type="number" id="idinscription" placeholder="Saisissez l'ID inscription..." />
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label for="idcourse">ID de la course</label>
+      <div class="input-wrapper">
+        <i class="fas fa-hashtag input-icon"></i>
+        <input type="number" id="idcourse" placeholder="Saisissez l'ID course..." />
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn-start" onclick="lancerCourse()">
+        <i class="fas fa-play" style="margin-right: 8px;"></i>Lancer la course
+      </button>
+      <button class="btn-stop" onclick="terminerCourse()">
+        <i class="fas fa-stop" style="margin-right: 8px;"></i>Terminer la course
+      </button>
+      <button onclick="chargerPhotoFinish()">
+        <i class="fas fa-camera" style="margin-right: 8px;"></i>Afficher la photo finish
+      </button>
+    </div>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    function showMessage(text, type) {
+      const messageEl = document.getElementById("message");
+      messageEl.className = `show ${type}`;
+      messageEl.innerHTML = text;
+
+      setTimeout(() => {
+        messageEl.classList.remove("show");
+      }, 5000);
+    }
+
+    function showLoading(buttonEl) {
+      const originalText = buttonEl.innerHTML;
+      buttonEl.innerHTML = '<span class="loading"></span>Chargement...';
+      buttonEl.disabled = true;
+
+      return () => {
+        buttonEl.innerHTML = originalText;
+        buttonEl.disabled = false;
+      };
+    }
+
+    async function lancerCourse() {
+      const idcourse = document.getElementById("idcourse").value;
+
+      if (!idcourse) {
+        showMessage(
+          '<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Veuillez saisir un ID de course',
+          "error"
+        );
+        return;
+      }
+
+      const buttonEl = document.querySelector(".btn-start");
+      const resetButton = showLoading(buttonEl);
+
+      try {
+        const response = await fetch("/api/lancer-course", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idcourse }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showMessage(
+            `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${data.message || "Course lancée avec succès !"}`,
+            "success"
+          );
+        } else {
+          showMessage(
+            `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${data.error || "Erreur lors du lancement"}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        showMessage(
+          '<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>Erreur de connexion',
+          "error"
+        );
+      } finally {
+        resetButton();
+      }
+    }
+
+    async function terminerCourse() {
+      const idcourse = document.getElementById("idcourse").value;
+
+      if (!idcourse) {
+        showMessage(
+          '<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Veuillez saisir un ID de course',
+          "error"
+        );
+        return;
+      }
+
+      const buttonEl = document.querySelector(".btn-stop");
+      const resetButton = showLoading(buttonEl);
+
+      try {
+        const response = await fetch("/api/terminer-course", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idcourse }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showMessage(
+            `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${data.message || "Course terminée avec succès !"}`,
+            "success"
+          );
+        } else {
+          showMessage(
+            `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${data.error || "Erreur lors de l'arrêt"}`,
+            "error"
+          );
+        }
+      } catch (error) {
+        showMessage(
+          '<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>Erreur de connexion',
+          "error"
+        );
+      } finally {
+        resetButton();
+      }
+    }
+
+    async function chargerPhotoFinish() {
+      const idinscription = document.getElementById("idinscription").value;
+
+      if (!idinscription) {
+        showMessage(
+          '<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Veuillez saisir un ID d\'inscription',
+          "error"
+        );
+        return;
+      }
+
+      const photoFinishDiv = document.getElementById("photo-finish");
+      photoFinishDiv.textContent = "Chargement...";
+
+      try {
+        const response = await fetch(`/api/inscription/${idinscription}`);
+        if (!response.ok) throw new Error("Inscription non trouvée");
+
+        const data = await response.json();
+
+        if (data.photo) {
+          photoFinishDiv.innerHTML = `<img src="/photo_capture/${data.photo}" alt="Photo finish du coureur" />`;
+        } else {
+          photoFinishDiv.textContent = "Pas encore de photo finish.";
+        }
+      } catch (error) {
+        photoFinishDiv.textContent = "Erreur chargement photo.";
+        showMessage(
+          `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${error.message}`,
+          "error"
+        );
+      }
+    }
+
+    // Autofocus sur idcourse à l’ouverture
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("idcourse").focus();
+    });
+
+    // Validation et masquage message d’erreur en temps réel
+    document.getElementById("idcourse").addEventListener("input", (e) => {
+      if (e.target.value && document.getElementById("message").classList.contains("show")) {
+        document.getElementById("message").classList.remove("show");
+      }
+    });
+
+    document.getElementById("idinscription").addEventListener("input", (e) => {
+      if (e.target.value && document.getElementById("message").classList.contains("show")) {
+        document.getElementById("message").classList.remove("show");
+      }
+    });
+
+    // Support Entrée pour lancer la course
+    document.getElementById("idcourse").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") lancerCourse();
+    });
+
+    // Support Entrée pour afficher la photo finish
+    document.getElementById("idinscription").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") chargerPhotoFinish();
+    });
+  </script>
+</body>
+</html>
