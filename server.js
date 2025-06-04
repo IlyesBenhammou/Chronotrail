@@ -28,6 +28,8 @@ app.use(bodyParser.json());
 
 // Servir les fichiers statiques depuis le dossier 'public'
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('/home/projet-chrono/capture_photo/public'));
+
 
 // Route pour afficher la page de connexion
 app.get("/", (req, res) => {
@@ -242,16 +244,7 @@ app.post('/api/preinscription', async (req, res) => {
 
 // Endpoint pour la création d'une course
 app.post('/save-course', async (req, res) => {
-    const {
-        nomcourse,
-        heurecourse,
-        depart,
-        arrive,
-        coordonee,
-        nb_maxparticipants = 50,
-        tempsfinal = null
-    } = req.body;
-    
+    const {nomcourse,heurecourse,depart,arrive,coordonee,nb_maxparticipants = 50,tempsfinal = null} = req.body;
     try {
         // Calculer la distance approximative en km
         let distance = 0;
@@ -262,7 +255,6 @@ app.post('/save-course', async (req, res) => {
                 const lon1 = coordonee[i-1][1];
                 const lat2 = coordonee[i][0];
                 const lon2 = coordonee[i][1];
-                
                 // Formule haversine pour calculer la distance
                 const R = 6371; // Rayon de la Terre en km
                 const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -272,23 +264,19 @@ app.post('/save-course', async (req, res) => {
                           Math.sin(dLon/2) * Math.sin(dLon/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                 const d = R * c;
-                
                 distance += d;
             }
             // Arrondir à deux décimales
             distance = Math.round(distance * 100) / 100;
         }
-        
         // Adaptation à la structure de la table course
         const query = `
             INSERT INTO course (nomcourse, datecourse, distance, heure_depart, heure_arrivee, nb_max_participants, coordonnees)
             VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
             RETURNING *
         `;
-        
         // Convertir les coordonnées en format JSON pour PostgreSQL
         const jsonCoordinates = coordonee ? JSON.stringify(coordonee) : null;
-        
         const values = [
             nomcourse,               // nomcourse 
             heurecourse,             // datecourse
@@ -298,7 +286,6 @@ app.post('/save-course', async (req, res) => {
             nb_maxparticipants,      // nb_max_participants
             jsonCoordinates          // coordonnees
         ];
-        
         const result = await pool.query(query, values);
         
         console.log("Course sauvegardée avec succès:", result.rows[0]);
@@ -343,94 +330,217 @@ app.get('/courses', async (req, res) => {
 });
 
 
-app.get('/course/:id', async (req, res) => {
-    const id = req.params.id;
+// Fonction pour générer le nom de photo automatiquement
+function generatePhotoName(courseId, heureArrivee) {
+    if (!heureArrivee) return null;
+    
+    const date = new Date(heureArrivee);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `photo_${courseId}_${year}${month}${day}_${hours}${minutes}${seconds}.jpg`;
+}
+
+// Fonction pour vérifier si un fichier photo existe
+function checkPhotoExists(photoName) {
+    if (!photoName) return false;
+    const photoPath = path.join(__dirname, 'photo_capture', photoName);
+    return fs.existsSync(photoPath);
+}
+
+// Fonction pour trouver une photo correspondante dans le dossier
+function findMatchingPhoto(courseId, heureArrivee) {
+    if (!heureArrivee) return null;
+    
+    const photoCaptureDir = path.join(__dirname, 'photo_capture');
     
     try {
-      const courseRes = await pool.query('SELECT * FROM course WHERE idcourse = $1', [id]);
-      if (courseRes.rows.length === 0) {
-        return res.status(404).json({ error: 'Course non trouvée' });
-      }
+        // Lister tous les fichiers du dossier photo_capture
+        const files = fs.readdirSync(photoCaptureDir);
+        
+        // Pattern pour les photos de cette course
+        const coursePattern = new RegExp(`photo_${courseId}_\\d{8}_\\d{6}\\.jpg`);
+        
+        // Trouver les photos qui correspondent à cette course
+        const coursePhotos = files.filter(file => coursePattern.test(file));
+        
+        if (coursePhotos.length === 0) return null;
+        
+        // Générer le nom attendu basé sur l'heure d'arrivée
+        const expectedPhotoName = generatePhotoName(courseId, heureArrivee);
+        
+        // Vérifier si la photo exacte existe
+        if (coursePhotos.includes(expectedPhotoName)) {
+            return expectedPhotoName;
+        }
+        
+        // Si pas de correspondance exacte, prendre la première photo disponible pour cette course
+        // (vous pouvez ajuster cette logique selon vos besoins)
+        return coursePhotos[0];
+        
+    } catch (error) {
+        console.error('❌ Erreur lors de la recherche de photo:', error);
+        return null;
+    }
+}
 
-      // 🔍 Debug - Voir toutes les inscriptions
-      const debugAllInscriptions = await pool.query(`
-        SELECT
-            i.idcourse,
-            c.idcoureur,
-            c.nomcoureur,
-            c.prenomcoureur,
-            i.heure_depart,
-            i.heure_arrivee,
-            CASE 
-                WHEN i.heure_depart IS NULL THEN 'DEPART_NULL'
-                WHEN i.heure_arrivee IS NULL THEN 'ARRIVEE_NULL'
-                ELSE 'COMPLETE'
-            END as statut
-        FROM inscription i
-        JOIN coureurs c ON i.idcoureur = c.idcoureur
-        WHERE i.idcourse = $1
-        ORDER BY c.nomcoureur
-      `, [id]);
+// Fonction pour mettre à jour automatiquement les photos
+async function updatePhotosAutomatically(courseId) {
+    try {
+        // Récupérer toutes les inscriptions avec heure d'arrivée mais sans photo
+        // MODIFICATION: Ajouter la jointure avec la table coureurs pour vérifier accordphoto
+        const inscriptionsRes = await pool.query(`
+            SELECT i.idinscription, i.idcourse, i.idcoureur, i.heure_arrivee, i.photo, c.accordphoto
+            FROM inscription i
+            JOIN coureurs c ON i.idcoureur = c.idcoureur
+            WHERE i.idcourse = $1 AND i.heure_arrivee IS NOT NULL
+        `, [courseId]);
+        
+        for (const inscription of inscriptionsRes.rows) {
+            let photoToAssign = null;
+            
+            // MODIFICATION: Vérifier accordphoto avant d'assigner une photo
+            if (inscription.accordphoto === true) {
+                // Si pas de photo assignée, essayer de trouver une photo
+                if (!inscription.photo) {
+                    photoToAssign = findMatchingPhoto(courseId, inscription.heure_arrivee);
+                } else {
+                    // Vérifier si la photo assignée existe encore
+                    if (!checkPhotoExists(inscription.photo)) {
+                        photoToAssign = findMatchingPhoto(courseId, inscription.heure_arrivee);
+                    }
+                }
+            } else {
+                // Si accordphoto est false, supprimer la photo existante
+                if (inscription.photo) {
+                    photoToAssign = null; // Explicitly set to null to remove photo
+                    console.log(`🚫 Photo supprimée pour inscription ${inscription.idinscription} - accord photo retiré`);
+                }
+            }
+            
+            // Mettre à jour si une photo a été trouvée ou si on doit supprimer une photo
+            if (photoToAssign !== undefined && photoToAssign !== inscription.photo) {
+                await pool.query(`
+                    UPDATE inscription 
+                    SET photo = $1 
+                    WHERE idinscription = $2
+                `, [photoToAssign, inscription.idinscription]);
+                
+                if (photoToAssign) {
+                    console.log(`📸 Photo assignée: ${photoToAssign} pour inscription ${inscription.idinscription}`);
+                } else {
+                    console.log(`🗑️ Photo supprimée pour inscription ${inscription.idinscription}`);
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur lors de la mise à jour automatique des photos:', error);
+    }
+}
 
-      console.log('🔍 DEBUG - Toutes les inscriptions:', debugAllInscriptions.rows);
-
-      // Classement avec LEFT JOIN
-      const classementRes = await pool.query(`
-        SELECT
-            i.idcourse,
-            i.idcoureur,
-            c.nomcoureur,
-            c.prenomcoureur,
-            i.heure_depart,
-            i.heure_arrivee,
-            i.heure_arrivee - i.heure_depart AS temps_total,
-            EXTRACT(EPOCH FROM i.heure_arrivee - i.heure_depart) AS temps_total_secondes,
-            RANK() OVER (
-                ORDER BY EXTRACT(EPOCH FROM i.heure_arrivee - i.heure_depart)
-            ) AS classement
-        FROM inscription i
-        LEFT JOIN coureurs c ON i.idcoureur = c.idcoureur
-        WHERE i.idcourse = $1
-        AND i.heure_depart IS NOT NULL
-        AND i.heure_arrivee IS NOT NULL
-        ORDER BY classement
-      `, [id]);
-
-      console.log('🏆 Classement SQL:', classementRes.rows);
-
-      // Coureurs sans temps complets
-      const inscritsSansTempsRes = await pool.query(`
-        SELECT c.nomcoureur, c.prenomcoureur, c.idcoureur,
-               i.heure_depart, i.heure_arrivee
-        FROM inscription i
-        JOIN coureurs c ON i.idcoureur = c.idcoureur
-        WHERE i.idcourse = $1
-        AND (i.heure_depart IS NULL OR i.heure_arrivee IS NULL)
-        ORDER BY c.nomcoureur, c.prenomcoureur
-      `, [id]);
-
-      console.log('📋 COUREURS EN ATTENTE:', inscritsSansTempsRes.rows);
-
-      // Formatage des timestamps pour le front-end
-      classementRes.rows.forEach(row => {
-          if (row.heure_depart) row.heure_depart = new Date(row.heure_depart).toISOString();
-          if (row.heure_arrivee) row.heure_arrivee = new Date(row.heure_arrivee).toISOString();
-      });
-
-      const course = {
-        ...courseRes.rows[0],
-        classement: classementRes.rows,
-        inscritsSansTemps: inscritsSansTempsRes.rows
-      };
-
-      res.json(course);
-
+app.get('/course/:id', async (req, res) => {
+    const courseId = req.params.id;
+    
+    try {
+        // Mettre à jour automatiquement les photos avant de récupérer les données
+        await updatePhotosAutomatically(courseId);
+        
+        const courseRes = await pool.query('SELECT * FROM course WHERE idcourse = $1', [courseId]);
+        if (courseRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Course non trouvée' });
+        }
+        
+        // 🔍 Debug - Voir toutes les inscriptions avec accordphoto
+        const debugAllInscriptions = await pool.query(`
+            SELECT 
+                i.idcourse,
+                c.idcoureur,
+                c.nomcoureur,
+                c.prenomcoureur,
+                c.accordphoto,
+                i.heure_depart,
+                i.heure_arrivee,
+                i.photo,
+                CASE 
+                    WHEN i.heure_depart IS NULL THEN 'DEPART_NULL'
+                    WHEN i.heure_arrivee IS NULL THEN 'ARRIVEE_NULL'
+                    ELSE 'COMPLETE'
+                END as statut
+            FROM inscription i
+            JOIN coureurs c ON i.idcoureur = c.idcoureur
+            WHERE i.idcourse = $1
+            ORDER BY c.nomcoureur
+        `, [courseId]);
+        
+        console.log('🔍 DEBUG - Toutes les inscriptions avec accordphoto:', debugAllInscriptions.rows);
+        
+        // MODIFICATION: Classement avec LEFT JOIN incluant accordphoto
+        const classementQuery = `
+            SELECT 
+                i.idcourse,
+                i.idcoureur,
+                c.nomcoureur,
+                c.prenomcoureur,
+                c.accordphoto,
+                i.heure_depart,
+                i.heure_arrivee,
+                i.heure_arrivee - i.heure_depart AS temps_total,
+                EXTRACT(EPOCH FROM i.heure_arrivee - i.heure_depart) AS temps_total_secondes,
+                CASE 
+                    WHEN c.accordphoto = true THEN i.photo
+                    ELSE NULL
+                END AS photo,
+                RANK() OVER (
+                    ORDER BY EXTRACT(EPOCH FROM i.heure_arrivee - i.heure_depart)
+                ) AS classement
+            FROM inscription i
+            LEFT JOIN coureurs c ON i.idcoureur = c.idcoureur
+            WHERE i.idcourse = $1
+                AND i.heure_depart IS NOT NULL
+                AND i.heure_arrivee IS NOT NULL
+            ORDER BY classement;
+        `;
+        
+        const classementResult = await pool.query(classementQuery, [courseId]);
+        const classement = classementResult.rows;
+        
+        // MODIFICATION: Coureurs sans temps complets avec accordphoto
+        const inscritsSansTempsRes = await pool.query(`
+            SELECT c.nomcoureur, c.prenomcoureur, c.idcoureur, c.accordphoto,
+                   i.heure_depart, i.heure_arrivee
+            FROM inscription i
+            JOIN coureurs c ON i.idcoureur = c.idcoureur
+            WHERE i.idcourse = $1
+            AND (i.heure_depart IS NULL OR i.heure_arrivee IS NULL)
+            ORDER BY c.nomcoureur, c.prenomcoureur
+        `, [courseId]);
+        
+        console.log('📋 COUREURS EN ATTENTE avec accordphoto:', inscritsSansTempsRes.rows);
+        
+        // Formatage des timestamps pour le front-end
+        classement.forEach(row => {
+            if (row.heure_depart) row.heure_depart = new Date(row.heure_depart).toISOString();
+            if (row.heure_arrivee) row.heure_arrivee = new Date(row.heure_arrivee).toISOString();
+        });
+        
+        const course = {
+            ...courseRes.rows[0],
+            classement: classement,
+            inscritsSansTemps: inscritsSansTempsRes.rows
+        };
+        
+        res.json(course);
+        
     } catch (err) {
-      console.error('❌ Erreur serveur:', err);
-      res.status(500).json({ error: 'Erreur serveur' });
+        console.error('❌ Erreur serveur:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
-
 
 // Route pour récupérer la liste des coureurs préinscrits
 app.get('/api/coureurs', async (req, res) => {

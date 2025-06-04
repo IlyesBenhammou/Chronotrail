@@ -1,120 +1,112 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails de la course</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        #map {
-            height: 400px;
-            width: 100%;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        
-        .error {
-            color: red;
-            font-weight: bold;
-            padding: 10px;
-            background-color: #ffebee;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-        
-        #course-details {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-            line-height: 1.6;
-        }
-        
-        #ranking-section {
-            margin-top: 30px;
-        }
-        
-        .runner-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            margin: 8px 0;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border-left: 4px solid #28a745;
-        }
-        
-        .runner-info {
-            display: flex;
-            align-items: center;
-            flex: 1;
-        }
-        
-        .runner-name {
-            font-weight: bold;
-            margin-right: 20px;
-            min-width: 200px;
-        }
-        
-        .runner-times {
-            display: flex;
-            gap: 20px;
-            font-size: 0.9em;
-        }
-        
-        .time-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .time-label {
-            font-size: 0.8em;
-            color: #666;
-            margin-bottom: 2px;
-        }
-        
-        .time-value {
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .no-runners {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 20px;
-        }
-        
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        h2 {
-            color: #333;
-            border-bottom: 2px solid #28a745;
-            padding-bottom: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Détail Trail</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  />
+  <style>
+    /* Styles simplifiés */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+    #map {
+      height: 400px;
+      margin-top: 20px;
+    }
+    .error {
+      color: red;
+      margin-bottom: 10px;
+    }
+    .image-container {
+      text-align: center;
+      margin: 15px 0;
+    }
+    .course-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.2);
+    }
+    .image-caption {
+      font-style: italic;
+      font-size: 0.9em;
+      margin-top: 4px;
+      color: #555;
+    }
+    .runner-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #fafafa;
+    }
+    .runner-info {
+      flex-grow: 1;
+    }
+    .runner-name {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    .runner-times {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+      font-size: 0.9em;
+    }
+    .time-info {
+      text-align: center;
+    }
+    .time-label {
+      font-weight: 600;
+      color: #666;
+    }
+    .time-value {
+      margin-top: 2px;
+    }
+    .runner-photo {
+      max-width: 100px;
+      max-height: 100px;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    .no-runners {
+      font-style: italic;
+      color: #666;
+      margin-top: 10px;
+    }
+    .photo-info {
+      font-size: 0.8em;
+      color: #666;
+      margin-top: 5px;
+    }
+    .update-photos-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    .update-photos-btn:hover {
+      background: #0056b3;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -122,180 +114,267 @@
     <div id="error-message" class="error" style="display:none;"></div>
 
     <h1 id="trail-title" style="display:none;"></h1>
+
+    <!-- Bouton pour forcer la mise à jour des photos -->
+    <button id="update-photos-btn" class="update-photos-btn" style="display:none;">
+      🔄 Mettre à jour les photos
+    </button>
+
+    <!-- Image de la course -->
+    <div id="course-image-container" class="image-container" style="display:none;">
+      <img id="course-image" class="course-image" alt="Photo de la course" />
+      <div class="image-caption">Photo de la course</div>
+    </div>
+
     <div id="course-details" style="display:none;"></div>
 
     <div id="map"></div>
 
     <div id="ranking-section" style="display:none;">
-      <h2>Participants inscrits</h2>
+      <h2>Classement</h2>
       <div id="classement-test"></div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script>
-  const urlParams = new URLSearchParams(window.location.search);
-const courseId = urlParams.get('id') || 1;
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('id') || 1;
 
-const map = L.map('map').setView([46.603354, 1.888334], 6);
+    // Initialisation de la carte Leaflet
+    const map = L.map('map').setView([46.603354, 1.888334], 6);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors',
-}).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
 
-function formatDate(dateString) {
-  if (!dateString) return 'Non spécifiée';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function formatTime(timeString) {
-  if (!timeString || timeString === null || timeString === 'null') return 'Non spécifié';
-  
-  try {
-    const date = new Date(timeString);
-    // Vérifier si la date est valide
-    if (isNaN(date.getTime())) {
-      return 'Non spécifié';
-    }
-    return date.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  } catch (error) {
-    console.error('Erreur lors du formatage de l\'heure:', error, timeString);
-    return 'Non spécifié';
-  }
-}
-
-function processCoordinates(data) {
-  try {
-    const coords = typeof data === 'string' ? JSON.parse(data) : data;
-    if (!Array.isArray(coords)) return [];
-    if (coords.length > 0 && Array.isArray(coords[0][0])) {
-      return coords.flat();
-    }
-    return coords.filter(c => Array.isArray(c) && c.length === 2);
-  } catch (e) {
-    console.error('Erreur lors du traitement des coordonnées:', e);
-    return [];
-  }
-}
-
-fetch(`/course/${courseId}`)
-  .then(res => {
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  })
-  .then(course => {
-    console.log('Données reçues:', course);
-    console.log('Classement:', course.classement);
-    
-    document.getElementById('loading-message').style.display = 'none';
-
-    // Titre
-    const title = document.getElementById('trail-title');
-    title.innerText = course.nomcourse || `Course #${course.idcourse}`;
-    title.style.display = 'block';
-
-    // Affichage des détails avec style amélioré
-    const container = document.getElementById('course-details');
-    container.innerHTML = `
-      <strong>📅 Date :</strong> ${formatDate(course.datecourse)}<br>
-      <strong>🏃 Heure de départ :</strong> ${course.heure_depart || 'Non spécifié'}<br>
-      <strong>🏁 Heure d'arrivée :</strong> ${course.heure_arrivee || 'Non spécifié'}<br>
-      <strong>📏 Distance :</strong> ${course.distance ? course.distance + ' km' : 'Non spécifiée'}<br>
-      <strong>👥 Participants Max :</strong> ${course.nb_max_participants || 'Non spécifié'}
-    `;
-    container.style.display = 'block';
-
-    // Afficher parcours sur la carte
-    const coordinates = processCoordinates(course.coordonnees);
-    if (coordinates.length > 0) {
-      const polyline = L.polyline(coordinates, { color: '#28a745', weight: 4 }).addTo(map);
-      L.marker(coordinates[0]).addTo(map).bindPopup('🏃 Départ');
-      L.marker(coordinates[coordinates.length - 1]).addTo(map).bindPopup('🏁 Arrivée');
-      map.fitBounds(polyline.getBounds());
-    } else {
-      map.setView([46.603354, 1.888334], 6);
+    // Formate une date (ex: "4 juin 2025 09:20")
+    function formatDate(dateString) {
+      if (!dateString) return 'Non spécifiée';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
 
-    // Afficher les coureurs inscrits avec leurs heures
-    const classementContainer = document.getElementById('classement-test');
-    classementContainer.innerHTML = '';
+    // Formate une heure (ex: "09:20:47")
+    function formatTime(timeString) {
+      if (!timeString || timeString === null || timeString === 'null') return 'Non spécifié';
+      const date = new Date(timeString);
+      if (isNaN(date.getTime())) return 'Non spécifié';
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
 
-    if (Array.isArray(course.classement) && course.classement.length > 0) {
-      console.log('Affichage de', course.classement.length, 'coureur(s)');
+    // Formate une durée en secondes en hh:mm:ss
+    function formatDuration(seconds) {
+      if (!seconds || seconds <= 0) return 'Non spécifié';
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return (h > 0 ? h.toString().padStart(2, '0') + ':' : '') +
+             m.toString().padStart(2, '0') + ':' +
+             s.toString().padStart(2, '0');
+    }
+
+    // Traite les coordonnées (pour la carte)
+    function processCoordinates(data) {
+      try {
+        const coords = typeof data === 'string' ? JSON.parse(data) : data;
+        if (!Array.isArray(coords)) return [];
+        if (coords.length > 0 && Array.isArray(coords[0][0])) {
+          return coords.flat();
+        }
+        return coords.filter(c => Array.isArray(c) && c.length === 2);
+      } catch (e) {
+        console.error('Erreur lors du traitement des coordonnées:', e);
+        return [];
+      }
+    }
+
+    // Fonction pour chercher dynamiquement une image de course
+    function findCourseImage(courseId) {
+      // Essayer différents patterns d'images de course
+      const possibleImages = [
+        `/photo_capture/course_${courseId}.jpg`,
+        `/photo_capture/photo_${courseId}_course.jpg`,
+        `/photo_capture/course_image_${courseId}.jpg`
+      ];
+
+      return new Promise((resolve) => {
+        let imageFound = false;
+        let checkedImages = 0;
+
+        possibleImages.forEach(imagePath => {
+          const img = new Image();
+          img.onload = () => {
+            if (!imageFound) {
+              imageFound = true;
+              resolve(imagePath);
+            }
+          };
+          img.onerror = () => {
+            checkedImages++;
+            if (checkedImages === possibleImages.length && !imageFound) {
+              resolve(null);
+            }
+          };
+          img.src = imagePath;
+        });
+      });
+    }
+
+    // Affiche l'image de la course si elle existe
+    async function displayCourseImage(courseId) {
+      const imageContainer = document.getElementById('course-image-container');
+      const courseImage = document.getElementById('course-image');
+
+      const imagePath = await findCourseImage(courseId);
       
-      course.classement.forEach((coureur) => {
-  console.log('coureur objet:', coureur);
-
-  const div = document.createElement('div');
-  div.className = 'runner-card';
-
-  function formatDuration(seconds) {
-    if (!seconds || seconds <= 0) return 'Non spécifié';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return (h > 0 ? h.toString().padStart(2, '0') + ':' : '') +
-           m.toString().padStart(2, '0') + ':' +
-           s.toString().padStart(2, '0');
-  }
-
-  const classement = coureur.classement ?? coureur.Classement ?? 'N/A';
-
-  div.innerHTML = `
-    <div class="runner-info">
-      <div class="runner-name">
-        <strong>${classement}.</strong> ${coureur.prenomcoureur} ${coureur.nomcoureur}
-      </div>
-      <div class="runner-times">
-        <div class="time-info">
-          <div class="time-label">Départ</div>
-          <div class="time-value">${formatTime(coureur.heure_depart)}</div>
-        </div>
-        <div class="time-info">
-          <div class="time-label">Arrivée</div>
-          <div class="time-value">${formatTime(coureur.heure_arrivee)}</div>
-        </div>
-        <div class="time-info">
-          <div class="time-label">Temps total</div>
-          <div class="time-value">${formatDuration(coureur.temps_total_secondes)}</div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  classementContainer.appendChild(div);
-});
-
-
-    } else {
-      console.log('Aucun coureur inscrit trouvé');
-      const div = document.createElement('div');
-      div.className = 'no-runners';
-      div.textContent = 'Aucun coureur inscrit pour cette course.';
-      classementContainer.appendChild(div);
+      if (imagePath) {
+        courseImage.src = imagePath;
+        imageContainer.style.display = 'block';
+      } else {
+        console.warn(`Aucune image de course trouvée pour la course ${courseId}`);
+      }
     }
-    
-    document.getElementById('ranking-section').style.display = 'block';
-  })
-  .catch(err => {
-    console.error('Erreur fetch:', err);
-    document.getElementById('loading-message').style.display = 'none';
-    const errorMsg = document.getElementById('error-message');
-    errorMsg.textContent = `Erreur : ${err.message}`;
-    errorMsg.style.display = 'block';
-  });
+
+    // Fonction pour mettre à jour les photos manuellement
+    function updatePhotos() {
+      const btn = document.getElementById('update-photos-btn');
+      btn.textContent = '🔄 Mise à jour...';
+      btn.disabled = true;
+
+      fetch(`/course/${courseId}/update-photos`, {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Photos mises à jour avec succès !');
+          // Recharger la page pour voir les changements
+          window.location.reload();
+        } else {
+          alert('Erreur lors de la mise à jour des photos');
+        }
+      })
+      .catch(err => {
+        console.error('Erreur:', err);
+        alert('Erreur lors de la mise à jour des photos');
+      })
+      .finally(() => {
+        btn.textContent = '🔄 Mettre à jour les photos';
+        btn.disabled = false;
+      });
+    }
+
+    // Fonction principale de chargement des données
+    fetch(`/course/${courseId}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(course => {
+        document.getElementById('loading-message').style.display = 'none';
+
+        // Titre de la course
+        const title = document.getElementById('trail-title');
+        title.textContent = course.nomcourse || `Course #${course.idcourse}`;
+        title.style.display = 'block';
+
+        // Afficher bouton de mise à jour des photos
+        const updateBtn = document.getElementById('update-photos-btn');
+        updateBtn.style.display = 'block';
+        updateBtn.onclick = updatePhotos;
+
+        // Afficher image de la course
+        displayCourseImage(course.idcourse);
+
+        // Afficher détails de la course
+        const details = document.getElementById('course-details');
+        details.innerHTML = `
+          <strong>📅 Date :</strong> ${formatDate(course.datecourse)}<br>
+          <strong>🏃 Heure de départ :</strong> ${course.heure_depart || 'Non spécifié'}<br>
+          <strong>🏁 Heure d'arrivée :</strong> ${course.heure_arrivee || 'Non spécifié'}<br>
+          <strong>📏 Distance :</strong> ${course.distance ? course.distance + ' km' : 'Non spécifiée'}<br>
+          <strong>👥 Participants Max :</strong> ${course.nb_max_participants || 'Non spécifié'}
+        `;
+        details.style.display = 'block';
+
+        // Afficher parcours sur la carte
+        const coords = processCoordinates(course.coordonnees);
+        if (coords.length > 0) {
+          const polyline = L.polyline(coords, { color: '#28a745', weight: 4 }).addTo(map);
+          L.marker(coords[0]).addTo(map).bindPopup('🏃 Départ');
+          L.marker(coords[coords.length - 1]).addTo(map).bindPopup('🏁 Arrivée');
+          map.fitBounds(polyline.getBounds());
+        } else {
+          map.setView([46.603354, 1.888334], 6);
+        }
+
+        // Afficher classement des coureurs
+        const classementContainer = document.getElementById('classement-test');
+        classementContainer.innerHTML = '';
+
+        if (Array.isArray(course.classement) && course.classement.length > 0) {
+          course.classement.forEach(coureur => {
+            const div = document.createElement('div');
+            div.className = 'runner-card';
+
+            // Créer l'image si photo dispo
+            let photoHtml = '';
+            if (coureur.photo) {
+              photoHtml = `
+                <div>
+                  <img src="/photo_capture/${coureur.photo}" alt="Photo de ${coureur.prenomcoureur} ${coureur.nomcoureur}" class="runner-photo" />
+                  <div class="photo-info">${coureur.photo}</div>
+                </div>
+              `;
+            } else {
+              photoHtml = `<div style="width:100px; height:100px; background:#ddd; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#999; font-size:0.8em;">Pas de photo</div>`;
+            }
+
+            div.innerHTML = `
+              ${photoHtml}
+              <div class="runner-info">
+                <div class="runner-name">
+                  <strong>${coureur.classement ?? 'N/A'}.</strong> ${coureur.prenomcoureur} ${coureur.nomcoureur}
+                </div>
+                <div class="runner-times">
+                  <div class="time-info">
+                    <div class="time-label">Départ</div>
+                    <div class="time-value">${formatTime(coureur.heure_depart)}</div>
+                  </div>
+                  <div class="time-info">
+                    <div class="time-label">Arrivée</div>
+                    <div class="time-value">${formatTime(coureur.heure_arrivee)}</div>
+                  </div>
+                  <div class="time-info">
+                    <div class="time-label">Temps total</div>
+                    <div class="time-value">${formatDuration(coureur.temps_total_secondes)}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            classementContainer.appendChild(div);
+          });
+        } else {
+          classementContainer.innerHTML = `<div class="no-runners">Aucun coureur inscrit pour cette course.</div>`;
+        }
+
+        document.getElementById('ranking-section').style.display = 'block';
+      })
+      .catch(err => {
+        console.error('Erreur fetch:', err);
+        document.getElementById('loading-message').style.display = 'none';
+        const errorMsg = document.getElementById('error-message');
+        errorMsg.textContent = `Erreur : ${err.message}`;
+        errorMsg.style.display = 'block';
+      });
   </script>
 </body>
 </html>
-  
