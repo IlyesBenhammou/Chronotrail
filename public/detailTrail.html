@@ -3,110 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" type="text/css" href="styleDetailTrail.css">
   <title>Détail Trail</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
   />
-  <style>
-    /* Styles simplifiés */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      padding: 20px;
-    }
-    #map {
-      height: 400px;
-      margin-top: 20px;
-    }
-    .error {
-      color: red;
-      margin-bottom: 10px;
-    }
-    .image-container {
-      text-align: center;
-      margin: 15px 0;
-    }
-    .course-image {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.2);
-    }
-    .image-caption {
-      font-style: italic;
-      font-size: 0.9em;
-      margin-top: 4px;
-      color: #555;
-    }
-    .runner-card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      background: #fafafa;
-    }
-    .runner-info {
-      flex-grow: 1;
-    }
-    .runner-name {
-      font-weight: bold;
-      font-size: 1.1em;
-    }
-    .runner-times {
-      display: flex;
-      gap: 10px;
-      margin-top: 5px;
-      font-size: 0.9em;
-    }
-    .time-info {
-      text-align: center;
-    }
-    .time-label {
-      font-weight: 600;
-      color: #666;
-    }
-    .time-value {
-      margin-top: 2px;
-    }
-    .runner-photo {
-      max-width: 100px;
-      max-height: 100px;
-      border-radius: 8px;
-      object-fit: cover;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
-    }
-    .no-runners {
-      font-style: italic;
-      color: #666;
-      margin-top: 10px;
-    }
-    .photo-info {
-      font-size: 0.8em;
-      color: #666;
-      margin-top: 5px;
-    }
-    .update-photos-btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-bottom: 15px;
-    }
-    .update-photos-btn:hover {
-      background: #0056b3;
-    }
-  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -114,11 +17,6 @@
     <div id="error-message" class="error" style="display:none;"></div>
 
     <h1 id="trail-title" style="display:none;"></h1>
-
-    <!-- Bouton pour forcer la mise à jour des photos -->
-    <button id="update-photos-btn" class="update-photos-btn" style="display:none;">
-      🔄 Mettre à jour les photos
-    </button>
 
     <!-- Image de la course -->
     <div id="course-image-container" class="image-container" style="display:none;">
@@ -133,6 +31,8 @@
     <div id="ranking-section" style="display:none;">
       <h2>Classement</h2>
       <div id="classement-test"></div>
+      <button id="download-pdf" class="download-pdf" style="margin-top: 20px;">Télécharger le classement en PDF</button>
+
     </div>
   </div>
 
@@ -242,139 +142,143 @@
       }
     }
 
-    // Fonction pour mettre à jour les photos manuellement
-    function updatePhotos() {
-      const btn = document.getElementById('update-photos-btn');
-      btn.textContent = '🔄 Mise à jour...';
-      btn.disabled = true;
+    let course = null;  // variable globale accessible partout
 
-      fetch(`/course/${courseId}/update-photos`, {
-        method: 'POST'
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert('Photos mises à jour avec succès !');
-          // Recharger la page pour voir les changements
-          window.location.reload();
-        } else {
-          alert('Erreur lors de la mise à jour des photos');
-        }
-      })
-      .catch(err => {
-        console.error('Erreur:', err);
-        alert('Erreur lors de la mise à jour des photos');
-      })
-      .finally(() => {
-        btn.textContent = '🔄 Mettre à jour les photos';
-        btn.disabled = false;
-      });
+fetch(`/course/${courseId}`)
+  .then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  })
+  .then(data => {
+    course = data; // stocke les données globalement
+
+    document.getElementById('loading-message').style.display = 'none';
+
+    // Titre de la course
+    const title = document.getElementById('trail-title');
+    title.textContent = course.nomcourse || `Course #${course.idcourse}`;
+    title.style.display = 'block';
+
+    // Afficher image de la course
+    displayCourseImage(course.idcourse);
+
+    // Afficher détails de la course
+    const details = document.getElementById('course-details');
+    details.innerHTML = `
+      <strong>📅 Date :</strong> ${formatDate(course.datecourse)}<br>
+      <strong>🏃 Heure de départ :</strong> ${course.heure_depart || 'Non spécifié'}<br>
+      <strong>🏁 Heure d'arrivée :</strong> ${course.heure_arrivee || 'Non spécifié'}<br>
+      <strong>📏 Distance :</strong> ${course.distance ? course.distance + ' km' : 'Non spécifiée'}<br>
+      <strong>👥 Participants Max :</strong> ${course.nb_max_participants || 'Non spécifié'}
+    `;
+    details.style.display = 'block';
+
+    // Afficher parcours sur la carte
+    const coords = processCoordinates(course.coordonnees);
+    if (coords.length > 0) {
+      const polyline = L.polyline(coords, { color: '#28a745', weight: 4 }).addTo(map);
+      L.marker(coords[0]).addTo(map).bindPopup('🏃 Départ');
+      L.marker(coords[coords.length - 1]).addTo(map).bindPopup('🏁 Arrivée');
+      map.fitBounds(polyline.getBounds());
+    } else {
+      map.setView([46.603354, 1.888334], 6);
     }
 
-    // Fonction principale de chargement des données
-    fetch(`/course/${courseId}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(course => {
-        document.getElementById('loading-message').style.display = 'none';
+    // Afficher classement des coureurs
+    const classementContainer = document.getElementById('classement-test');
+    classementContainer.innerHTML = '';
 
-        // Titre de la course
-        const title = document.getElementById('trail-title');
-        title.textContent = course.nomcourse || `Course #${course.idcourse}`;
-        title.style.display = 'block';
+    if (Array.isArray(course.classement) && course.classement.length > 0) {
+      course.classement.forEach(coureur => {
+        const div = document.createElement('div');
+        div.className = 'runner-card';
 
-        // Afficher bouton de mise à jour des photos
-        const updateBtn = document.getElementById('update-photos-btn');
-        updateBtn.style.display = 'block';
-        updateBtn.onclick = updatePhotos;
-
-        // Afficher image de la course
-        displayCourseImage(course.idcourse);
-
-        // Afficher détails de la course
-        const details = document.getElementById('course-details');
-        details.innerHTML = `
-          <strong>📅 Date :</strong> ${formatDate(course.datecourse)}<br>
-          <strong>🏃 Heure de départ :</strong> ${course.heure_depart || 'Non spécifié'}<br>
-          <strong>🏁 Heure d'arrivée :</strong> ${course.heure_arrivee || 'Non spécifié'}<br>
-          <strong>📏 Distance :</strong> ${course.distance ? course.distance + ' km' : 'Non spécifiée'}<br>
-          <strong>👥 Participants Max :</strong> ${course.nb_max_participants || 'Non spécifié'}
-        `;
-        details.style.display = 'block';
-
-        // Afficher parcours sur la carte
-        const coords = processCoordinates(course.coordonnees);
-        if (coords.length > 0) {
-          const polyline = L.polyline(coords, { color: '#28a745', weight: 4 }).addTo(map);
-          L.marker(coords[0]).addTo(map).bindPopup('🏃 Départ');
-          L.marker(coords[coords.length - 1]).addTo(map).bindPopup('🏁 Arrivée');
-          map.fitBounds(polyline.getBounds());
+        let photoHtml = '';
+        if (coureur.photo) {
+          photoHtml = `
+            <div>
+              <img src="/photo_capture/${coureur.photo}" alt="Photo de ${coureur.prenomcoureur} ${coureur.nomcoureur}" class="runner-photo" />
+              <div class="photo-info">${coureur.photo}</div>
+            </div>
+          `;
         } else {
-          map.setView([46.603354, 1.888334], 6);
+          photoHtml = `<div style="width:100px; height:100px; background:#ddd; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#999; font-size:0.8em;">Pas de photo</div>`;
         }
 
-        // Afficher classement des coureurs
-        const classementContainer = document.getElementById('classement-test');
-        classementContainer.innerHTML = '';
-
-        if (Array.isArray(course.classement) && course.classement.length > 0) {
-          course.classement.forEach(coureur => {
-            const div = document.createElement('div');
-            div.className = 'runner-card';
-
-            // Créer l'image si photo dispo
-            let photoHtml = '';
-            if (coureur.photo) {
-              photoHtml = `
-                <div>
-                  <img src="/photo_capture/${coureur.photo}" alt="Photo de ${coureur.prenomcoureur} ${coureur.nomcoureur}" class="runner-photo" />
-                  <div class="photo-info">${coureur.photo}</div>
-                </div>
-              `;
-            } else {
-              photoHtml = `<div style="width:100px; height:100px; background:#ddd; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#999; font-size:0.8em;">Pas de photo</div>`;
-            }
-
-            div.innerHTML = `
-              ${photoHtml}
-              <div class="runner-info">
-                <div class="runner-name">
-                  <strong>${coureur.classement ?? 'N/A'}.</strong> ${coureur.prenomcoureur} ${coureur.nomcoureur}
-                </div>
-                <div class="runner-times">
-                  <div class="time-info">
-                    <div class="time-label">Départ</div>
-                    <div class="time-value">${formatTime(coureur.heure_depart)}</div>
-                  </div>
-                  <div class="time-info">
-                    <div class="time-label">Arrivée</div>
-                    <div class="time-value">${formatTime(coureur.heure_arrivee)}</div>
-                  </div>
-                  <div class="time-info">
-                    <div class="time-label">Temps total</div>
-                    <div class="time-value">${formatDuration(coureur.temps_total_secondes)}</div>
-                  </div>
-                </div>
+        div.innerHTML = `
+          ${photoHtml}
+          <div class="runner-info">
+            <div class="runner-name">
+              <strong>${coureur.classement ?? 'N/A'}.</strong> ${coureur.prenomcoureur} ${coureur.nomcoureur}
+            </div>
+            <div class="runner-times">
+              <div class="time-info">
+                <div class="time-label">Départ</div>
+                <div class="time-value">${formatTime(coureur.heure_depart)}</div>
               </div>
-            `;
+              <div class="time-info">
+                <div class="time-label">Arrivée</div>
+                <div class="time-value">${formatTime(coureur.heure_arrivee)}</div>
+              </div>
+              <div class="time-info">
+                <div class="time-label">Temps total</div>
+                <div class="time-value">${formatDuration(coureur.temps_total_secondes)}</div>
+              </div>
+            </div>
+          </div>
+        `;
 
-            classementContainer.appendChild(div);
-          });
-        } else {
-          classementContainer.innerHTML = `<div class="no-runners">Aucun coureur inscrit pour cette course.</div>`;
-        }
-
-        document.getElementById('ranking-section').style.display = 'block';
-      })
-      .catch(err => {
-        console.error('Erreur fetch:', err);
-        document.getElementById('loading-message').style.display = 'none';
-        const errorMsg = document.getElementById('error-message');
-        errorMsg.textContent = `Erreur : ${err.message}`;
-        errorMsg.style.display = 'block';
+        classementContainer.appendChild(div);
       });
+    } else {
+      classementContainer.innerHTML = `<div class="no-runners">Aucun coureur inscrit pour cette course.</div>`;
+    }
+
+    document.getElementById('ranking-section').style.display = 'block';
+  })
+  .catch(err => {
+    console.error('Erreur fetch:', err);
+    document.getElementById('loading-message').style.display = 'none';
+    const errorMsg = document.getElementById('error-message');
+    errorMsg.textContent = `Erreur : ${err.message}`;
+    errorMsg.style.display = 'block';
+  });
+
+// Gestion du bouton Télécharger en PDF
+document.getElementById('download-pdf').addEventListener('click', () => {
+  if (!course) {
+    alert("Les données ne sont pas encore chargées.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let y = 10;
+  doc.setFontSize(14);
+  doc.text("Classement des coureurs", 10, y);
+  y += 10;
+
+  if (Array.isArray(course.classement) && course.classement.length > 0) {
+    course.classement.forEach((coureur) => {
+      const ligne = `${coureur.classement ?? 'N/A'}. ${coureur.prenomcoureur} ${coureur.nomcoureur} - Départ: ${formatTime(coureur.heure_depart)} - Arrivée: ${formatTime(coureur.heure_arrivee)} - Temps: ${formatDuration(coureur.temps_total_secondes)}`;
+      doc.setFontSize(11);
+      doc.text(ligne, 10, y);
+      y += 8;
+
+      if (y > 280) {
+        doc.addPage();
+        y = 10;
+      }
+    });
+
+    doc.save("classement.pdf");
+  } else {
+    alert("Aucun coureur à exporter.");
+  }
+});
+
+
   </script>
 </body>
 </html>

@@ -1,90 +1,130 @@
+require('dotenv').config(); // Charge les variables d'environnement au début
+
 const express = require('express');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const path = require('path');
-require('dotenv').config();
+const session = require('express-session');
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+
 
 const app = express();
 const PORT = 3000;
 
-let hDebut = null;
-
 // Configuration PostgreSQL
 const pool = new Pool({
-    user: 'postgres', // Remplace par ton utilisateur PostgreSQL
-    host: '172.30.232.10',
-    database: 'trail', // Remplace par ton nom de base de données
-    password: 'Mdp-p0$tRoot', // Remplace par ton mot de passe PostgreSQL
-    port: 5432,
+    user: process.env.PG_USER,
+    host: process.env.PG_HOST,
+    database: process.env.PG_DATABASE,
+    password: process.env.PG_PASSWORD,
+    port: Number(process.env.PG_PORT),
+
 });
+// Configuration des sessions
 
+app.use(session({
+    secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        secure: false,
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 heures
+    }
+}));
 
-
-// Middleware pour analyser les données
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Servir les fichiers statiques depuis le dossier 'public'
+// Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static('/home/projet-chrono/capture_photo/public'));
 
+// Middleware d’authentification simple
+function requireAdminAuth(req, res, next) {
+    if (req.session && req.session.authenticated && req.session.userType === 'admin') {
+        next();
+    } else {
+        res.redirect('/connexion.html');
+    }
+}
 
-// Route pour afficher la page de connexion
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+// Routes publiques
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Route pour la page d'inscription
-app.get("/inscription", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "inscription.html"));
+app.get('/connexion.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'connexion.html'));
 });
 
-// Ajout d'une route pour servir un favicon
+app.get('/inscription', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'inscription.html'));
+});
+
 app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
 });
+
+app.get("/gestion_journee.html", (req, res) => {
+    if (req.session.authenticated && req.session.userType === 'admin') {
+        res.sendFile(path.join(__dirname, "protection", "gestion_journee.html"));
+    } else {
+        res.redirect('/connexion.html');
+    }
+});
+// Route protégée
+app.get("/choixParcours.html", (req, res) => {
+    if (req.session.authenticated && req.session.userType === 'admin') {
+        res.sendFile(path.join(__dirname, "protection", "choixParcours.html"));
+    } else {
+        res.redirect('/connexion.html');
+    }
+});
+
+
 
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Cas 1 : admin
-        if (username === "admin" && password === "admin") {
-            return res.sendFile(path.join(__dirname, "public", "choixCourseAdmin.html"));
+        // Cas admin
+        if (username === ADMIN_USERNAME  && password === ADMIN_PASSWORD ) {
+            req.session.authenticated = true;
+            req.session.userType = ADMIN_USERNAME;
+            req.session.username = username;
+
+            // Redirige vers la page admin
+            return res.redirect('/choixCourseAdmin.html');
         }
 
-        // Cas 2 : vérification dans la table preinscriptioncoureur ou coureurs
-        // D'abord, vérifions dans preinscriptioncoureur
-        let result = await pool.query(
-            'SELECT * FROM preinscriptioncoureur WHERE prenomcoureur = $1 AND nomcoureur = $2',
-            [username, password]
-        );
-
-        // Si non trouvé, vérifions dans la table coureurs
-        if (result.rows.length === 0) {
-            result = await pool.query(
-                'SELECT * FROM coureurs WHERE prenomcoureur = $1 AND nomcoureur = $2',
-                [username, password]
-            );
-        }
-
-        if (result.rows.length > 0) {
-            // Si le coureur est trouvé
-            return res.sendFile(path.join(__dirname, "public", "gestion_journe_coureur.html"));
-        } else {
-            // Aucun utilisateur trouvé
-            return res.send("<h1>Identifiant ou mot de passe incorrect</h1>");
-        }
-
+        // Sinon, mauvais identifiants
+        res.status(401).send('Identifiants invalides');
     } catch (err) {
         console.error('Erreur lors de la connexion à la base de données', err);
         res.status(500).send(`<h1>Erreur serveur: ${err.message}</h1>`);
     }
 });
 
-// Endpoint pour traiter les préinscriptions des coureurs
+// Route logout (optionnel)
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error('Erreur lors de la déconnexion:', err);
+            return res.status(500).json({ error: 'Erreur lors de la déconnexion' });
+        }
+        res.redirect('/connexion.html');
+    });
+});
+
+
+
+
+
 // Endpoint pour traiter les préinscriptions des coureurs
 app.post('/api/preinscription', async (req, res) => {
     try {
@@ -174,18 +214,18 @@ app.post('/api/preinscription', async (req, res) => {
             
             console.log("Préinscription enregistrée avec succès:", newCoureur);
             
-            // Configuration du transporteur pour l'envoi d'emails
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: 'thomasbilhaut8@gmail.com',
-                    pass: 'uive noxt vzov lgme' // Mot de passe d'application
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS // Mot de passe d'application
                 }
             });
             
+            
             // Options de l'email
             const mailOptions = {
-                from: 'thomasbilhaut8@gmail.com',
+                from: process.env.EMAIL_USER,
                 to: email,
                 subject: 'Confirmation de préinscription - ChronoTrail',
                 html: `
@@ -201,7 +241,6 @@ app.post('/api/preinscription', async (req, res) => {
                             <li><strong>Email :</strong> ${email}</li>
                             <li><strong>Téléphone :</strong> ${telephone}</li>
                         </ul>
-                        <p>Vous pouvez vous connecter à notre plateforme en utilisant votre <strong>prénom</strong> comme nom d'utilisateur et votre <strong>nom</strong> comme mot de passe.</p>
                         <p>Cordialement,<br>L'équipe ChronoTrail</p>
                     </div>
                 `
@@ -240,7 +279,6 @@ app.post('/api/preinscription', async (req, res) => {
         });
     }
 });
-
 
 // Endpoint pour la création d'une course
 app.post('/save-course', async (req, res) => {
@@ -302,9 +340,6 @@ app.post('/save-course', async (req, res) => {
     }
 });
 
-  
-
-
 // Route pour récupérer toutes les courses
 app.get('/courses', async (req, res) => {
     try {
@@ -328,7 +363,6 @@ app.get('/courses', async (req, res) => {
         });
     }
 });
-
 
 // Fonction pour générer le nom de photo automatiquement
 function generatePhotoName(courseId, heureArrivee) {
