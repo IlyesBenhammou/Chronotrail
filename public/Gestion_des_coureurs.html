@@ -1,0 +1,1471 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Coureurs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
+            --neutral-200: #e2e8f0;
+            --neutral-300: #cbd5e1;
+            --neutral-700: #334155;
+            --neutral-800: #1e293b;
+            --neutral-900: #0f172a;
+            --radius: 0.5rem;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--neutral-100);
+            color: var(--neutral-800);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Header Styles */
+        .app-header {
+            background-color: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--neutral-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .app-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin: 0;
+        }
+
+        .app-title p {
+            color: var(--secondary);
+            font-size: 0.95rem;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Main Content Styles */
+        .app-content {
+            padding: 1.5rem 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--neutral-800);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--neutral-200);
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+        }
+
+        thead tr {
+            background-color: var(--neutral-50);
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--neutral-700);
+            text-transform: none;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--neutral-200);
+            font-size: 0.95rem;
+            color: var(--neutral-800);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: var(--neutral-50);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-present {
+            background-color: rgba(22, 163, 74, 0.1);
+            color: var(--success);
+        }
+
+        .status-absent {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            outline: none;
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            border-radius: var(--radius);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--neutral-300);
+            color: var(--neutral-700);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--neutral-100);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-dark);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-dark);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Utils */
+        .text-center {
+            text-align: center;
+        }
+
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .toast {
+            padding: 1rem;
+            border-radius: var(--radius);
+            background-color: white;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 300px;
+            transform: translateY(10px);
+            opacity: 0;
+            animation: slideIn 0.3s forwards;
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast-info {
+            border-left: 4px solid var(--primary);
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            color: var(--neutral-700);
+        }
+
+        .toast-close {
+            cursor: pointer;
+            color: var(--neutral-700);
+            font-size: 1rem;
+        }
+
+        @keyframes slideIn {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loader */
+        .loader-container {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--neutral-200);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--neutral-700);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--neutral-300);
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-message {
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            color: var(--neutral-700);
+        }
+
+        /* Dossard styles */
+        .dossard-available {
+            background-color: rgba(22, 163, 74, 0.1);
+        }
+
+        .dossard-unavailable {
+            background-color: rgba(220, 38, 38, 0.1);
+        }
+        
+        .dossard-row {
+            cursor: pointer;
+        }
+        
+        .dossard-row:hover {
+            background-color: var(--neutral-200) !important;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--neutral-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--neutral-900);
+        }
+        
+        .modal-close {
+            cursor: pointer;
+            font-size: 1.25rem;
+            color: var(--neutral-700);
+            background: none;
+            border: none;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--neutral-200);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--neutral-200);
+            margin-bottom: 1rem;
+        }
+        
+        .tab {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--neutral-700);
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .app-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            th, td {
+                padding: 0.75rem;
+            }
+
+            .btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Section des dossards -->
+        <div class="card">
+            <div class="app-header">
+                <div class="app-title">
+                    <h1>Gestion des Dossards</h1>
+                    <p>Sélection des dossards pour les participants</p>
+                </div>
+                <div class="app-actions">
+                    <button class="btn btn-outline" id="refresh-dossards-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-content">
+                <div class="section-header">
+                    <h2 class="section-title">Liste des dossards</h2>
+                    <div class="count" id="dossards-count"></div>
+                </div>
+
+                <div class="table-container">
+                    <table id="dossards-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Numéro</th>
+                                <th>UID</th>
+                                <th>Disponibilité</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="dossards-body">
+                            <!-- Le contenu sera chargé dynamiquement -->
+                        </tbody>
+                    </table>
+                    <div id="dossards-loader" class="loader-container">
+                        <div class="loader"></div>
+                    </div>
+                    <div id="dossards-empty" class="empty-state" style="display: none;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-hashtag"></i>
+                        </div>
+                        <h3 class="empty-state-title">Aucun dossard trouvé</h3>
+                        <p class="empty-state-message">Il n'y a aucun dossard enregistré pour le moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section des coureurs -->
+        <div class="card">
+            <div class="app-header">
+                <div class="app-title">
+                    <h1>Gestion des Coureurs</h1>
+                    <p>Système de gestion des participants aux événements sportifs</p>
+                </div>
+                <div class="app-actions">
+                    <button class="btn btn-outline" id="refresh-coureurs-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-content">
+                <div class="section-header">
+                <h2 class="section-title">Liste des participants</h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <select id="filter-course" class="btn btn-outline">
+                         <option value="">Toutes les courses</option>
+                    </select>
+                    <input type="text" id="search-coureur" placeholder="🔎 Rechercher un coureur..." class="btn btn-outline" style="width: 200px;">
+                    <div class="count" id="coureurs-count"></div>
+                </div>
+            </div>
+
+
+                <div class="table-container">
+                    <table id="coureurs-table">
+                        <thead>
+                            <tr>
+                                <th>Dossard</th>
+                                <th>Nom</th>
+                                <th>Prénom</th>
+                                <th>Accord Photo</th>
+                                <th>Présence</th>
+                                <th>Actions</th>
+
+                            </tr>
+                        </thead>
+                        <tbody id="coureurs-body">
+                            <!-- Le contenu sera chargé dynamiquement -->
+                        </tbody>
+                    </table>
+                    <div id="coureurs-loader" class="loader-container">
+                        <div class="loader"></div>
+                    </div>
+                    <div id="coureurs-empty" class="empty-state" style="display: none;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-running"></i>
+                        </div>
+                        <h3 class="empty-state-title">Aucun coureur trouvé</h3>
+                        <p class="empty-state-message">Il n'y a aucun coureur enregistré pour le moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour attribuer un dossard -->
+    <div class="modal-overlay" id="assign-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Attribuer un dossard</h3>
+                <button class="modal-close" id="close-assign-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <div class="tab active" data-tab="tab-available">Dossards disponibles</div>
+                    <div class="tab" data-tab="tab-all">Tous les dossards</div>
+                </div>
+                
+                <div class="tab-content active" id="tab-available">
+                    <div class="table-container">
+                        <table id="modal-dossards-available-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Numéro</th>
+                                    <th>Disponibilité</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-dossards-available-body">
+                                <!-- Le contenu sera chargé dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="tab-all">
+                    <div class="table-container">
+                        <table id="modal-dossards-all-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Numéro</th>
+                                    <th>Disponibilité</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-dossards-all-body">
+                                <!-- Le contenu sera chargé dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <input type="hidden" id="current-coureur-id">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancel-assign">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        const API_BASE_URL = "http://172.30.232.10:3000/api";
+        let coureursData = [];
+        let dossardsData = [];
+        let currentCoureurId = null;
+
+        // DOM Elements
+        const coureursBody = document.getElementById("coureurs-body");
+        const coureursCount = document.getElementById("coureurs-count");
+        const coureursLoader = document.getElementById("coureurs-loader");
+        const coureursEmpty = document.getElementById("coureurs-empty");
+        const refreshCoureursBtn = document.getElementById("refresh-coureurs-btn");
+        
+        const dossardsBody = document.getElementById("dossards-body");
+        const dossardsCount = document.getElementById("dossards-count");
+        const dossardsLoader = document.getElementById("dossards-loader");
+        const dossardsEmpty = document.getElementById("dossards-empty");
+        const refreshDossardsBtn = document.getElementById("refresh-dossards-btn");
+        
+        const assignModal = document.getElementById("assign-modal");
+        const closeAssignModal = document.getElementById("close-assign-modal");
+        const cancelAssignBtn = document.getElementById("cancel-assign");
+        const modalDossardsAvailableBody = document.getElementById("modal-dossards-available-body");
+        const modalDossardsAllBody = document.getElementById("modal-dossards-all-body");
+        
+        const toastContainer = document.getElementById("toast-container");
+        
+        // Tabs
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Event Listeners
+        document.addEventListener("DOMContentLoaded", initialize);
+        refreshCoureursBtn.addEventListener("click", fetchCoureurs);
+        refreshDossardsBtn.addEventListener("click", fetchDossards);
+        closeAssignModal.addEventListener("click", closeModal);
+        cancelAssignBtn.addEventListener("click", closeModal);
+        
+        // Tab event listeners
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Activate corresponding content
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        function initialize() {
+            fetchCoureurs();
+            fetchDossards();
+        }
+
+
+// Chargement des courses dans le select
+function fetchCourses() {
+    fetch(`${API_BASE_URL}/courses`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('filter-course');
+            data.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course.idcourse;
+                option.textContent = course.nomcourse;
+                select.appendChild(option);
+            });
+        });
+}
+
+// Filtrage par course
+document.getElementById('filter-course').addEventListener('change', (e) => {
+    const idcourse = e.target.value;
+    if (idcourse) {
+        fetch(`${API_BASE_URL}/coureurs-by-course/${idcourse}`)
+            .then(res => res.json())
+            .then(data => {
+                coureursData = data;
+                renderCoureursTable();
+                updateCoureursCount();
+            });
+    } else {
+        fetchCoureurs(); // toutes les courses
+    }
+});
+
+// Recherche de coureur par nom
+document.getElementById('search-coureur').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const rows = coureursBody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const nom = row.querySelector('td:nth-child(2)')?.innerText.toLowerCase() || '';
+        row.style.display = nom.includes(term) ? '' : 'none';
+    });
+});
+
+// Appel initial
+document.addEventListener('DOMContentLoaded', () => {
+    initialize();
+    fetchCourses();
+});
+
+
+
+        function fetchCoureurs() {
+            showLoader(coureursLoader, coureursBody);
+            fetch(`${API_BASE_URL}/coureurs`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur lors de la récupération des données des coureurs.");
+                    return response.json();
+                })
+                .then(data => {
+                    coureursData = data;
+                    renderCoureursTable();
+                    updateCoureursCount();
+                    showNotification("Succès", "Les données des coureurs ont été chargées avec succès.", "success");
+                })
+                .catch(error => {
+                    console.error("Erreur de récupération des coureurs :", error);
+                    showNotification("Erreur", "Impossible de charger les données des coureurs. Veuillez réessayer.", "error");
+                })
+                .finally(() => {
+                    hideLoader(coureursLoader, coureursBody);
+                });
+        }
+        
+        function fetchDossards() {
+            showLoader(dossardsLoader, dossardsBody);
+            fetch(`${API_BASE_URL}/dossards`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur lors de la récupération des données des dossards.");
+                    return response.json();
+                })
+                .then(data => {
+                    dossardsData = data;
+                    renderDossardsTable();
+                    updateDossardsCount();
+                    showNotification("Succès", "Les données des dossards ont été chargées avec succès.", "success");
+                })
+                .catch(error => {
+                    console.error("Erreur de récupération des dossards :", error);
+                    showNotification("Erreur", "Impossible de charger les données des dossards. Veuillez réessayer.", "error");
+                })
+                .finally(() => {
+                    hideLoader(dossardsLoader, dossardsBody);
+                });
+        }
+
+        function sendCoureurToDatabase(coureur) {
+            showNotification("En cours", "Mise à jour des données du coureur...", "info");
+            fetch(`${API_BASE_URL}/coureurs/${coureur.idcoureur}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(coureur),
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur lors de l'envoi des données du coureur.");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Données du coureur mises à jour avec succès :", data);
+                    showNotification("Succès", `Statut du coureur ${coureur.nomcoureur} mis à jour avec succès.`, "success");
+                })
+                .catch(error => {
+                    console.error("Erreur lors de l'envoi des données du coureur :", error);
+                    showNotification("Erreur", "Échec de la mise à jour du coureur. Veuillez réessayer.", "error");
+                });
+        }
+        
+        function sendDossardToDatabase(dossard) {
+    showNotification("En cours", "Mise à jour des données du dossard...", "info");
+    fetch(`${API_BASE_URL}/dossards/${dossard.iddossard}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disponible: dossard.disponible }),
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Erreur lors de l'envoi des données du dossard.");
+        return response.json();
+    })
+    .then(data => {
+        console.log("Données du dossard mises à jour avec succès :", data);
+        showNotification("Succès", `Statut du dossard n°${dossard.numero} mis à jour avec succès.`, "success");
+    })
+    .catch(error => {
+        console.error("Erreur lors de l'envoi des données du dossard :", error);
+        showNotification("Erreur", "Échec de la mise à jour du dossard. Veuillez réessayer.", "error");
+    });
+}
+        
+function assignDossardToCoureur(dossardId, coureurId) {
+    console.log("Assigning dossard:", dossardId, "to coureur:", coureurId); // Ajoutez ce log
+    fetch(`${API_BASE_URL}/assign-dossard`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            dossardId: dossardId,
+            coureurId: coureurId
+        }),
+    })
+    .then(response => {
+        console.log("API response:", response); // Ajoutez ce log
+        if (!response.ok) throw new Error("Erreur lors de l'attribution du dossard.");
+        return response.json();
+    })
+    .then(data => {
+        console.log("Dossard attribué avec succès :", data);
+        fetchCoureurs();
+        fetchDossards();
+        closeModal();
+        showNotification("Succès", "Dossard attribué avec succès.", "success");
+    })
+    .catch(error => {
+        console.error("Erreur lors de l'attribution du dossard :", error);
+        showNotification("Erreur", "Échec de l'attribution du dossard. Veuillez réessayer.", "error");
+    });
+}
+
+
+        function renderCoureursTable() {
+            if (coureursData.length === 0) {
+                showEmptyState(coureursEmpty, "coureurs-table");
+                return;
+            }
+            
+            hideEmptyState(coureursEmpty, "coureurs-table");
+            coureursBody.innerHTML = "";
+            
+            coureursData.forEach((coureur, index) => {
+                const row = document.createElement("tr");
+                
+                // Format de la date pour l'affichage
+                const dateObj = new Date(coureur.datenaissance);
+                const formattedDate = dateObj.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                
+                // Définir le statut de présence en fonction de la valeur dans la base de données
+                const presentValue = coureur.present;
+                const statusClass = presentValue ? 'status-present' : 'status-absent';
+                const statusIcon = presentValue ? 'fa-check-circle' : 'fa-times-circle';
+                const statusText = presentValue ? 'Présent' : 'Absent';
+                
+                // Affichage du numéro de dossard (vide ou avec le numéro assigné)
+                const dossardInfo = "<span class='btn btn-outline' onclick='openAssignModal(" + coureur.idcoureur + ")'>" +
+                                    "<i class='fas fa-hashtag'></i> " +
+                                    (coureur.iddossard ? "Dossard " + getDossardNumberById(coureur.iddossard) : "Assigner un dossard") +
+                                    "</span>";
+                
+                row.innerHTML = `
+                    <td>${dossardInfo}</td>
+                    <td><a href="#" onclick="openCoureurDetail(${index})">${coureur.nomcoureur}</a></td>
+                    <td>${coureur.prenomcoureur}</td>
+                    <td>${coureur.accordphoto ? 
+                          '<span class="status status-present"><i class="fas fa-check"></i> Oui</span>' : 
+                          '<span class="status status-absent"><i class="fas fa-times"></i> Non</span>'}</td>
+                    <td>
+                        <span class="status ${statusClass}">
+                            <i class="fas ${statusIcon}"></i>
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-icon" onclick="updatePresence(${index}, true)" title="Marquer comme présent">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-danger btn-icon" onclick="updatePresence(${index}, false)" title="Marquer comme absent">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                coureursBody.appendChild(row);
+            });
+        }
+        
+        function renderDossardsTable() {
+            if (dossardsData.length === 0) {
+                showEmptyState(dossardsEmpty, "dossards-table");
+                return;
+            }
+            
+            hideEmptyState(dossardsEmpty, "dossards-table");
+            dossardsBody.innerHTML = "";
+            
+            dossardsData.forEach((dossard, index) => {
+                const row = document.createElement("tr");
+                
+                // Définir la classe de la ligne en fonction de la disponibilité
+                row.className = dossard.disponible ? 'dossard-available dossard-row' : 'dossard-unavailable dossard-row';
+                
+                // Format des dates
+                const departDate = dossard.heure_depart ? new Date(dossard.heure_depart) : null;
+                const arriveeDate = dossard.heure_arrivee ? new Date(dossard.heure_arrivee) : null;
+                
+                const formattedDepart = departDate ? formatDateTime(departDate) : '-';
+                const formattedArrivee = arriveeDate ? formatDateTime(arriveeDate) : '-';
+                
+                // Texte de disponibilité
+                const disponibiliteText = dossard.disponible ? 
+                    '<span class="status status-present"><i class="fas fa-check"></i> Disponible</span>' : 
+                    '<span class="status status-absent"><i class="fas fa-times"></i> Utilisé</span>';
+                
+                row.innerHTML = `
+                    <td>${dossard.iddossard}</td>
+                    <td>${dossard.numero}</td>
+                    <td>${dossard.uid || '-'}</td>
+                    <td>${dossard.disponible ? 
+                        '<span class="status status-present"><i class="fas fa-check"></i> Disponible</span>' : 
+                        '<span class="status status-absent"><i class="fas fa-times"></i> Utilisé</span>'}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn ${dossard.disponible ? 'btn-primary' : 'btn-outline'} btn-icon" onclick="toggleDossardAvailability(${index}, ${!dossard.disponible})" title="${dossard.disponible ? 'Marquer comme utilisé' : 'Marquer comme disponible'}">
+                                <i class="fas ${dossard.disponible ? 'fa-lock' : 'fa-unlock'}"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+
+                dossardsBody.appendChild(row);
+            });
+        }
+        
+        function renderModalDossards() {
+            // Remplir l'onglet dossards disponibles
+            modalDossardsAvailableBody.innerHTML = "";
+            const availableDossards = dossardsData.filter(dossard => dossard.disponible);
+            
+            availableDossards.forEach(dossard => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${dossard.iddossard}</td>
+                    <td>${dossard.numero}</td>
+                    <td><span class="status status-present"><i class="fas fa-check"></i> Disponible</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-icon" onclick="confirmAssignDossard(${dossard.iddossard})" title="Assigner ce dossard">
+                            <i class="fas fa-check"></i> Assigner
+                        </button>
+                    </td>
+                `;
+                modalDossardsAvailableBody.appendChild(row);
+            });
+            
+            // Remplir l'onglet tous les dossards
+            modalDossardsAllBody.innerHTML = "";
+            
+            dossardsData.forEach(dossard => {
+                const disponibiliteText = dossard.disponible ? 
+                    '<span class="status status-present"><i class="fas fa-check"></i> Disponible</span>' : 
+                    '<span class="status status-absent"><i class="fas fa-times"></i> Utilisé</span>';
+                
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${dossard.iddossard}</td>
+                    <td>${dossard.numero}</td>
+                    <td>${disponibiliteText}</td>
+                    <td>
+                        <button class="btn btn-primary btn-icon" onclick="confirmAssignDossard(${dossard.iddossard})" 
+                            title="Assigner ce dossard" ${!dossard.disponible ? 'disabled' : ''}>
+                            <i class="fas fa-check"></i> Assigner
+                        </button>
+                    </td>
+                `;
+                modalDossardsAllBody.appendChild(row);
+            });
+        }
+
+        function getDossardNumberById(iddossard) {
+            const dossard = dossardsData.find(d => d.iddossard === iddossard);
+            return dossard ? dossard.numero : "N/A";
+        }
+        
+        function formatDateTime(date) {
+            return date.toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function updatePresence(index, status) {
+            // Mise à jour de la valeur dans notre tableau local
+            coureursData[index].present = status;
+            
+            // Envoi des données mises à jour à la base de données
+            sendCoureurToDatabase(coureursData[index]);
+            
+            // Mise à jour de l'affichage
+            renderCoureursTable();
+        }
+        
+        function toggleDossardAvailability(index, status) {
+            // Mise à jour de la valeur dans notre tableau local
+            dossardsData[index].disponible = status;
+            
+            // Envoi des données mises à jour à la base de données
+            sendDossardToDatabase(dossardsData[index]);
+            
+            // Mise à jour de l'affichage
+            renderDossardsTable();
+        }
+        
+        function openAssignModal(coureurId) {
+            currentCoureurId = coureurId;
+            document.getElementById("current-coureur-id").value = coureurId;
+            
+            // Remplir la modal avec les dossards disponibles
+            renderModalDossards();
+            
+            // Afficher la modal
+            assignModal.classList.add("active");
+        }
+        
+        function closeModal() {
+            assignModal.classList.remove("active");
+        }
+        
+        function confirmAssignDossard(dossardId) {
+            const coureurId = document.getElementById("current-coureur-id").value;
+            
+            // Appel de la fonction pour assigner le dossard au coureur
+            assignDossardToCoureur(dossardId, coureurId);
+        }
+
+        function updateCoureursCount() {
+            coureursCount.textContent = `${coureursData.length} participant${coureursData.length > 1 ? 's' : ''}`;
+        }
+        
+        function updateDossardsCount() {
+            const availableDossards = dossardsData.filter(dossard => dossard.disponible).length;
+            dossardsCount.textContent = `${dossardsData.length} dossard${dossardsData.length > 1 ? 's' : ''} (${availableDossards} disponible${availableDossards > 1 ? 's' : ''})`;
+        }
+
+        function showLoader(loader, content) {
+            loader.style.display = "flex";
+            content.style.display = "none";
+        }
+
+        function hideLoader(loader, content) {
+            loader.style.display = "none";
+            content.style.display = "";
+        }
+
+        function showEmptyState(emptyState, tableId) {
+            emptyState.style.display = "block";
+            document.getElementById(tableId).style.display = "none";
+        }
+
+        function hideEmptyState(emptyState, tableId) {
+            emptyState.style.display = "none";
+            document.getElementById(tableId).style.display = "table";
+        }
+
+        function showNotification(title, message, type = "info") {
+            const toast = document.createElement("div");
+            toast.className = `toast toast-${type}`;
+            
+            let iconClass = "fa-info-circle";
+            if (type === "success") iconClass = "fa-check-circle";
+            if (type === "error") iconClass = "fa-exclamation-circle";
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas ${iconClass}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close">
+                    <i class="fas fa-times"></i>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Close toast on click
+            toast.querySelector(".toast-close").addEventListener("click", () => {
+                toast.remove();
+            });
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(10px)";
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Expose functions to global scope for onclick handlers
+        window.updatePresence = updatePresence;
+        window.toggleDossardAvailability = toggleDossardAvailability;
+        window.openAssignModal = openAssignModal;
+        window.confirmAssignDossard = confirmAssignDossard;
+    
+    
+function openCoureurDetail(index) {
+    const coureur = coureursData[index];
+    const detailWindow = window.open("", "_blank", "width=600,height=700");
+    const formattedDate = new Date(coureur.datenaissance).toLocaleDateString('fr-FR');
+
+    fetch(`/api/coureurs/${coureur.idcoureur}/courses`)
+        .then(response => {
+            if (!response.ok) throw new Error("Erreur récupération courses");
+            return response.json();
+        })
+        .then(courses => {
+            let courseHTML = '';
+            if (courses.length === 0) {
+                courseHTML = `<p style='color: #6c757d; font-style: italic; text-align: center; padding: 30px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px; border: 2px dashed #dee2e6;'>🏃‍♂️ Aucune course enregistrée pour ce coureur.</p>`;
+            } else {
+                courseHTML = '<ul style="list-style: none; padding: 0;">';
+                courses.forEach(course => {
+                    const date = course.datecourse
+                            ? new Date(course.datecourse.replace(' ', 'T')).toLocaleDateString('fr-FR')
+                            : '—';
+
+                        const heure = course.heure_depart
+                            ? new Date(`1970-01-01T${course.heure_depart}`).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                            : '—';
+
+
+                    courseHTML += `<li style="margin-bottom: 1.5em; background: linear-gradient(135deg, #ffffff, #f8f9fa); padding: 20px; border-radius: 15px; border-left: 5px solid #007bff; box-shadow: 0 4px 15px rgba(0,123,255,0.1); transition: all 0.3s ease; border: 1px solid #e9ecef;">
+                        <strong style="color: #2c3e50; font-size: 1.1em; display: block; margin-bottom: 10px;">${course.nomcourse}</strong>
+                        <div style="display: flex; gap: 20px; flex-wrap: wrap; color: #6c757d; font-size: 0.95em;">
+                            <span>📅 ${date}</span>
+                            <span>🕐 ${heure}</span>
+                            <span style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">🎽${course.numerodossard || 'Non attribué'}</span>
+                        </div>
+                    </li>`;
+                });
+                courseHTML += '</ul>';
+            }
+
+            detailWindow.document.write(`
+                <html lang='fr'>
+                <head>
+                    <meta charset='UTF-8'>
+                    <title>Profil du coureur</title>
+                    <style>
+                        body { 
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            min-height: 100vh;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                        .container {
+                            max-width: 100%;
+                            background: rgba(255, 255, 255, 0.95);
+                            backdrop-filter: blur(10px);
+                            border-radius: 20px;
+                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+                            overflow: hidden;
+                            animation: slideUp 0.6s ease-out;
+                        }
+                        @keyframes slideUp {
+                            from { opacity: 0; transform: translateY(30px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        h2 { 
+                            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+                            color: white;
+                            margin: 0;
+                            padding: 30px;
+                            text-align: center;
+                            font-size: 2em;
+                            font-weight: 700;
+                            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+                            position: relative;
+                        }
+                        h2::before {
+                            content: '🏃‍♂️';
+                            display: block;
+                            font-size: 1.5em;
+                            margin-bottom: 10px;
+                            animation: bounce 2s infinite;
+                        }
+                        @keyframes bounce {
+                            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                            40% { transform: translateY(-8px); }
+                            60% { transform: translateY(-4px); }
+                        }
+                        .content {
+                            padding: 30px;
+                        }
+                        .section { 
+                            margin-top: 30px; 
+                        }
+                        h3 {
+                            color: #2c3e50;
+                            font-size: 1.4em;
+                            font-weight: 600;
+                            margin-bottom: 20px;
+                            padding-bottom: 10px;
+                            border-bottom: 3px solid #007bff;
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                        }
+                        h3::before {
+                            content: '🏃‍♂️';
+                        }
+                        .label { 
+                            font-weight: 600; 
+                            color: #495057;
+                            text-transform: uppercase;
+                            font-size: 0.85em;
+                            letter-spacing: 0.5px;
+                            margin-bottom: 5px;
+                            display: block;
+                        }
+                        p {
+                            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                            padding: 15px 20px;
+                            margin: 10px 0;
+                            border-radius: 12px;
+                            border-left: 4px solid #007bff;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                        }
+                        p:hover {
+                            transform: translateX(5px);
+                            box-shadow: 0 4px 15px rgba(0,123,255,0.15);
+                        }
+                        .status-oui {
+                            background: linear-gradient(135deg, #28a745, #20c997) !important;
+                            color: white !important;
+                            padding: 5px 12px !important;
+                            border-radius: 15px !important;
+                            font-size: 0.85em !important;
+                            font-weight: 600 !important;
+                            display: inline-block !important;
+                        }
+                        .status-non {
+                            background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
+                            color: white !important;
+                            padding: 5px 12px !important;
+                            border-radius: 15px !important;
+                            font-size: 0.85em !important;
+                            font-weight: 600 !important;
+                            display: inline-block !important;
+                        }
+                        .status-present {
+                            background: linear-gradient(135deg, #28a745, #20c997) !important;
+                            color: white !important;
+                            padding: 5px 12px !important;
+                            border-radius: 15px !important;
+                            font-size: 0.85em !important;
+                            font-weight: 600 !important;
+                            display: inline-block !important;
+                        }
+                        .status-absent {
+                            background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
+                            color: white !important;
+                            padding: 5px 12px !important;
+                            border-radius: 15px !important;
+                            font-size: 0.85em !important;
+                            font-weight: 600 !important;
+                            display: inline-block !important;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>${coureur.prenomcoureur} ${coureur.nomcoureur}</h2>
+                        <div class="content">
+                            <p><span class='label'>Date de naissance :</span> 📅 ${formattedDate}</p>
+                            <p><span class='label'>Email :</span> ✉️ ${coureur.email}</p>
+                            <p><span class='label'>Téléphone :</span> 📞 ${coureur.telephone}</p>
+                            <p><span class='label'>Accord Photo :</span> <span class="${coureur.accordphoto ? 'status-oui' : 'status-non'}">${coureur.accordphoto ? '✅ Oui' : '❌ Non'}</span></p>
+                            <p><span class='label'>Présence :</span> <span class="${coureur.present ? 'status-present' : 'status-absent'}">${coureur.present ? '✅ Présent' : '❌ Absent'}</span></p>
+                            <p><span class='label'>Dossard :</span>🎽${getDossardNumberById(coureur.iddossard) || 'Non attribué'}</p>
+
+                            <div class="section">
+                                <h3>Courses inscrites</h3>
+                                ${courseHTML}
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            detailWindow.document.close();
+        })
+        .catch(error => {
+            console.error("Erreur affichage profil courses:", error);
+            detailWindow.document.write("<p>Erreur lors du chargement des données du coureur.</p>");
+            detailWindow.document.close();
+        });
+}
+
+// Fonction pour générer le HTML des courses (à adapter selon vos données)
+function generateCoursesHTML(courses) {
+    if (!courses || courses.length === 0) {
+        return `
+            <div class="no-courses">
+                <p>Aucune course inscrite pour le moment</p>
+            </div>
+        `;
+    }
+    
+    return courses.map(course => `
+        <div class="course-card">
+            <div class="course-name">${course.nom}</div>
+            <div class="course-details">
+                <div class="course-info">
+                    📅 ${new Date(course.date).toLocaleDateString('fr-FR')} • 
+                    🎽 ${course.distance || 'N/A'} • 
+                    🕐 ${course.heure || 'N/A'}
+                </div>
+                <span class="course-status status-${course.statut.toLowerCase()}">
+                    ${course.statut}
+                </span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Fonction pour récupérer les courses d'un coureur (à implémenter selon votre BDD)
+function getCoursesForCoureur(coureurId) {
+    // Exemple de structure - à adapter selon votre base de données
+    // Cette fonction devrait faire une requête pour récupérer les courses
+    // auxquelles le coureur est inscrit
+    
+    // Exemple de retour :
+    /*
+    return [
+        {
+            id: 1,
+            nom: "10km de la ville",
+            date: "2024-06-15",
+            heure: "09:00",
+            distance: "10km",
+            statut: "Inscrit"
+        },
+        {
+            id: 2,
+            nom: "Semi-marathon",
+            date: "2024-07-20",
+            heure: "08:30",
+            distance: "21km",
+            statut: "Attente"
+        }
+    ];
+    */
+    
+    // Pour l'instant, retournez un tableau vide ou des données de test
+    return [];
+}
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    </script>
+
+
+
+
+
+</body>
+</html>

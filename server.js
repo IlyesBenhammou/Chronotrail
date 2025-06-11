@@ -7,13 +7,20 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const path = require('path');
 const session = require('express-session');
+const cors = require('cors'); // Charger cors
+
+const app = express(); // ← Créer app AVANT de l'utiliser
+
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://172.30.232.10:3000', 'http://127.0.0.1:3000'],
+    credentials: true
+}));
 
-
-const app = express();
 const PORT = 3000;
+
 
 // Configuration PostgreSQL
 const pool = new Pool({
@@ -86,6 +93,14 @@ app.get("/choixParcours.html", (req, res) => {
     }
 });
 
+app.get("/Gestion_des_coureurs.html", (req, res) => {
+    if (req.session.authenticated && req.session.userType === 'admin') {
+        res.sendFile(path.join(__dirname, "protection", "Gestion_des_coureurs.html"));
+    } else {
+        res.redirect('/connexion.html');
+    }
+});
+
 
 
 app.post("/login", async (req, res) => {
@@ -122,6 +137,176 @@ app.post('/logout', (req, res) => {
 });
 
 
+
+// --- COUREURS ---
+app.get('/api/coureurs', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT *, 
+                   (SELECT iddossard FROM dossards WHERE dossards.idcoureur = coureurs.idcoureur) AS iddossard 
+            FROM coureurs
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.put('/api/coureurs/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nomcoureur, prenomcoureur, datenaissance, email, telephone, accordphoto, present } = req.body;
+    try {
+        await pool.query(`
+            UPDATE coureurs SET
+                nomcoureur = $1,
+                prenomcoureur = $2,
+                datenaissance = $3,
+                email = $4,
+                telephone = $5,
+                accordphoto = $6,
+                present = $7
+            WHERE idcoureur = $8
+        `, [nomcoureur, prenomcoureur, datenaissance, email, telephone, accordphoto, present, id]);
+        res.json({ message: 'Mise à jour réussie' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// --- COURSES ---
+app.get('/api/coureurs/:id/courses', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT 
+                c.nomcourse,
+                c.datecourse,
+                c.distance,
+                c.heure_depart,
+                d.numero AS numerodossard
+            FROM inscription i
+            JOIN course c ON c.idcourse = i.idcourse
+            LEFT JOIN dossards d ON d.idcoureur = i.idcoureur
+            WHERE i.idcoureur = $1
+            ORDER BY c.datecourse DESC
+        `, [id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erreur récupération courses :', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.get('/api/courses', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT idcourse, nomcourse FROM course ORDER BY nomcourse');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur récupération des courses' });
+    }
+});
+
+app.get('/api/coureurs-by-course/:idcourse', async (req, res) => {
+    const { idcourse } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT c.*, d.iddossard
+            FROM coureurs c
+            JOIN inscription i ON i.idcoureur = c.idcoureur
+            LEFT JOIN dossards d ON d.idcoureur = c.idcoureur
+            WHERE i.idcourse = $1
+        `, [idcourse]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur récupération coureurs par course' });
+    }
+});
+
+// --- DOSSARDS ---
+app.get('/api/dossards', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM dossards ORDER BY numero');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.get('/api/dossards/:iddossard', async (req, res) => {
+    const { iddossard } = req.params;
+    try {
+        const result = await pool.query('SELECT numero FROM dossards WHERE iddossard = $1', [iddossard]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Dossard non trouvé' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.post('/api/assign-dossard', async (req, res) => {
+    const { dossardId, coureurId } = req.body;
+    try {
+        // Libérer l'ancien dossard (le cas échéant)
+        await pool.query(
+          'UPDATE dossards SET idcoureur = NULL, disponible = true WHERE idcoureur = $1',
+          [coureurId]
+        );
+        // Assigner le nouveau
+        await pool.query(
+          'UPDATE dossards SET idcoureur = $1, disponible = false WHERE iddossard = $2',
+          [coureurId, dossardId]
+        );
+        res.json({ message: 'Dossard attribué avec succès.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// --- INSCRIPTIONS ---
+app.post('/api/inscriptions', async (req, res) => {
+    const { idcoureur, idcourse } = req.body;
+    try {
+        const exist = await pool.query(
+          'SELECT * FROM inscription WHERE idcoureur = $1 AND idcourse = $2',
+          [idcoureur, idcourse]
+        );
+        if (exist.rows.length > 0) {
+            return res.status(400).json({ message: 'Déjà inscrit.' });
+        }
+        await pool.query(
+          'INSERT INTO inscription (idcoureur, idcourse, heure_depart) VALUES ($1, $2, NOW())',
+          [idcoureur, idcourse]
+        );
+        res.json({ message: 'Inscription réussie' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.put('/api/dossards/:iddossard', async (req, res) => {
+    const { iddossard } = req.params;
+    const { disponible } = req.body;
+    try {
+        await pool.query(
+          'UPDATE dossards SET disponible = $1 WHERE iddossard = $2',
+          [disponible, iddossard]
+        );
+        res.json({ message: 'Mise à jour réussie' });
+    } catch (err) {
+        console.error('Erreur mise à jour dossard :', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 
 
 
