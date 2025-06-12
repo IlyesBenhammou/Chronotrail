@@ -557,6 +557,60 @@ app.get('/courses', async (req, res) => {
     }
 });
 
+// Route pour supprimer une course
+app.delete('/course/:id', requireAdminAuth, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        // Vérifier si la course existe
+        const courseExists = await pool.query('SELECT idcourse FROM course WHERE idcourse = $1', [id]);
+        
+        if (courseExists.rows.length === 0) {
+            return res.status(404).json({ 
+                error: 'Course non trouvée' 
+            });
+        }
+        
+        // Début d'une transaction pour garantir l'intégrité des données
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            // 1. Supprimer d'abord toutes les inscriptions liées à cette course
+            await client.query('DELETE FROM inscription WHERE idcourse = $1', [id]);
+            
+            // 2. Supprimer la course elle-même
+            const deleteResult = await client.query('DELETE FROM course WHERE idcourse = $1', [id]);
+            
+            // Valider la transaction
+            await client.query('COMMIT');
+            
+            console.log(`✅ Course avec ID ${id} supprimée avec succès`);
+            
+            res.status(200).json({ 
+                message: 'Course supprimée avec succès',
+                deletedCourseId: id 
+            });
+            
+        } catch (err) {
+            // En cas d'erreur, annuler la transaction
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            // Toujours libérer le client à la fin
+            client.release();
+        }
+        
+    } catch (err) {
+        console.error('❌ Erreur lors de la suppression de la course:', err);
+        res.status(500).json({ 
+            error: 'Erreur serveur lors de la suppression de la course',
+            details: err.message 
+        });
+    }
+});
+
 // Fonction pour générer le nom de photo automatiquement
 function generatePhotoName(courseId, heureArrivee) {
     if (!heureArrivee) return null;
