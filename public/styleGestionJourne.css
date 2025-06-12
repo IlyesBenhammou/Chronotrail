@@ -1,114 +1,103 @@
-/* Reset général */
+/* Reset de base */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-}
-
-body {
+  }
+  
+  /* Fond + texte global */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3)),
+                url('./2fond-choix-parcours4k.jpg') center/cover no-repeat fixed;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    justify-content: flex-start;
     color: #fff;
-    text-align: center;
-    padding: 20px;
-}
-
-.admin-container {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    padding: 40px 20px;
+  }
+  
+  /* Conteneur principal */
+  .admin-container {
+    background: rgba(255, 255, 255, 0.85);
+    padding: 40px 30px;
+    border-radius: 15px;
     width: 100%;
     max-width: 500px;
-}
-
-h1 {
-    font-size: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    margin-bottom: 30px;
+  }
+  
+  /* Titres */
+  h1 {
+    font-size: 2em;
     margin-bottom: 20px;
-    color: #f8f8f8;
-}
-
-label {
+    color: #2d5a27;
+    text-align: center;
+  }
+  
+  /* Formulaires */
+  form label {
     display: block;
-    font-weight: 600;
-    margin: 10px 0 5px;
-}
-
-input {
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #2d5a27;
+    font-weight: bold;
+  }
+  
+  form input {
     width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    background: #f8f8f8;
-    color: #333;
-}
-
-input:focus {
-    outline: none;
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-}
-
-#map {
-    width: 100%;
-    max-width: 800px;
-    height: 400px;
-    margin-top: 20px;
+    padding: 12px 15px;
+    border: 2px solid #2d5a27;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
-}
-
-button {
-    width: 100%;
-    max-width: 400px;
-    padding: 12px;
-    margin: 10px 0;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
+    font-size: 1em;
+    background-color: #fff;
+    color: #2d5a27;
+    outline: none;
     transition: all 0.3s ease;
-}
-
-#saveButton {
-    background: #28a745;
+  }
+  
+  form input:focus {
+    border-color: #4a7c59;
+    box-shadow: 0 0 10px rgba(45, 90, 39, 0.3);
+  }
+  
+  /* Carte */
+  #map {
+    width: 100%;
+    max-width: 1000px;
+    height: 400px;
+    margin: 30px auto;
+    border: 2px solid #2d5a27;
+    border-radius: 10px;
+  }
+  
+  /* Boutons actions */
+  .action-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .action-buttons button {
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #2d5a27, #4a7c59);
+    border: none;
     color: white;
-}
-
-#saveButton:hover {
-    background: #218838;
-    transform: scale(1.05);
-}
-
-button:nth-child(2) {
-    background: #007bff;
-    color: white;
-}
-
-button:nth-child(2):hover {
-    background: #0056b3;
-    transform: scale(1.05);
-}
-
-@media (max-width: 600px) {
-    .admin-container {
-        width: 90%;
-    }
-
-    #map {
-        height: 300px;
-    }
-}
+    font-size: 1.1em;
+    font-weight: bold;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  
+  .action-buttons button:hover {
+    background: linear-gradient(135deg, #4a7c59, #2d5a27);
+    transform: translateY(-2px);
+  }
+  

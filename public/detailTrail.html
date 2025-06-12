@@ -99,9 +99,9 @@
     function findCourseImage(courseId) {
       // Essayer différents patterns d'images de course
       const possibleImages = [
-        `/photo_capture/course_${courseId}.jpg`,
-        `/photo_capture/photo_${courseId}_course.jpg`,
-        `/photo_capture/course_image_${courseId}.jpg`
+        `/photo-capture/course_${courseId}.jpg`,
+        `/photo-capture/photo_${courseId}_course.jpg`,
+        `/photo-capture/course_image_${courseId}.jpg`
       ];
 
       return new Promise((resolve) => {
@@ -197,7 +197,7 @@ fetch(`/course/${courseId}`)
         if (coureur.photo) {
           photoHtml = `
             <div>
-              <img src="/photo_capture/${coureur.photo}" alt="Photo de ${coureur.prenomcoureur} ${coureur.nomcoureur}" class="runner-photo" />
+              <img src="/photo-capture/${coureur.photo}" alt="Photo de ${coureur.prenomcoureur} ${coureur.nomcoureur}" class="runner-photo" />
               <div class="photo-info">${coureur.photo}</div>
             </div>
           `;
@@ -243,6 +243,37 @@ fetch(`/course/${courseId}`)
     errorMsg.textContent = `Erreur : ${err.message}`;
     errorMsg.style.display = 'block';
   });
+
+  // Ajouter les événements de clic sur les photos
+document.addEventListener('DOMContentLoaded', function() {
+  // Créer le modal une seule fois
+  const modal = document.createElement('div');
+  modal.className = 'photo-modal';
+  modal.innerHTML = `
+    <div class="photo-modal-content">
+      <span class="photo-modal-close">&times;</span>
+      <img src="" alt="Photo agrandie">
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  const modalImg = modal.querySelector('img');
+  const closeBtn = modal.querySelector('.photo-modal-close');
+  
+  // Gérer les clics sur les photos
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('runner-photo')) {
+      modalImg.src = e.target.src;
+      modal.classList.add('show');
+    }
+  });
+  
+  // Fermer le modal
+  closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('show');
+  });
+});
 
 // Gestion du bouton Télécharger en PDF
 document.getElementById('download-pdf').addEventListener('click', () => {

@@ -1,3 +1,0 @@
-# Chronotrail
-Projet BTS  chronotrail
-
